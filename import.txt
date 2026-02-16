@@ -1,0 +1,6 @@
+# Папка с файлами: C:\Users\user\Documents\fuckdemoexam\Модуль 1\import
+# Если в заказах столбец "Адрес пункта выдачи" — числа 1, 2, 3..., добавьте файл с адресами (один столбец):
+# addresses=C:\Users\user\Documents\fuckdemoexam\Модуль 1\import\адреса.xlsx
+users=C:\Users\user\Documents\fuckdemoexam\Модуль 1\import\user_import.xlsx
+products=C:\Users\user\Documents\fuckdemoexam\Модуль 1\import\tovar.xlsx
+orders=C:\Users\user\Documents\fuckdemoexam\Модуль 1\import\заказ_import.xlsx
