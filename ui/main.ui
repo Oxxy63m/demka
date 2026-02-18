@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>ProductListWindow</class>
+ <widget class="QMainWindow" name="ProductListWindow">
+  <property name="windowTitle"><string>Список товаров</string></property>
+  <property name="minimumSize"><size><width>800</width><height>500</height></size></property>
+  <widget class="QWidget" name="centralwidget">
+   <layout class="QVBoxLayout" name="verticalLayout">
+    <item>
+     <layout class="QHBoxLayout" name="head">
+      <item><widget class="QLabel" name="lbl_title"><property name="text"><string>Список товаров</string></property></widget></item>
+      <item><widget class="QPushButton" name="btn_orders"><property name="text"><string>Заказы</string></property></widget></item>
+      <item><widget class="QPushButton" name="btn_logout"><property name="text"><string>Выход</string></property></widget></item>
+      <item><spacer name="horizontalSpacer"><property name="orientation"><enum>Qt::Horizontal</enum></property><property name="sizeHint"><size><width>40</width><height>20</height></size></property></spacer></item>
+      <item><widget class="QLabel" name="lbl_user"><property name="text"><string>Гость</string></property></widget></item>
+     </layout>
+    </item>
+    <item>
+     <layout class="QHBoxLayout" name="row_filter">
+      <item><widget class="QLabel" name="lbl_search"><property name="text"><string>Поиск:</string></property></widget></item>
+      <item><widget class="QLineEdit" name="search_edit"><property name="placeholderText"><string>Поиск по названию, артикулу...</string></property></widget></item>
+      <item><widget class="QLabel" name="lbl_supplier"><property name="text"><string>Поставщик:</string></property></widget></item>
+      <item><widget class="QComboBox" name="supplier_combo"/></item>
+      <item><widget class="QLabel" name="lbl_sort"><property name="text"><string>Сортировка по количеству:</string></property></widget></item>
+      <item><widget class="QComboBox" name="sort_combo"/></item>
+     </layout>
+    </item>
+    <item>
+     <layout class="QHBoxLayout" name="row_buttons">
+      <item><widget class="QPushButton" name="btn_add"><property name="text"><string>Добавить товар</string></property></widget></item>
+     </layout>
+    </item>
+    <item>
+     <widget class="QScrollArea" name="cards_scroll">
+      <property name="widgetResizable"><bool>true</bool></property>
+      <property name="horizontalScrollBarPolicy"><enum>Qt::ScrollBarAlwaysOff</enum></property>
+      <widget class="QWidget" name="cards_container">
+       <property name="geometry"><rect><x>0</x><y>0</y><width>100</width><height>100</height></rect></property>
+       <layout class="QVBoxLayout" name="cards_layout"><property name="alignment"><set>Qt::AlignTop</set></property></layout>
+      </widget>
+     </widget>
+    </item>
+   </layout>
+  </widget>
+ </widget>
+ <resources/><connections/>
+</ui>

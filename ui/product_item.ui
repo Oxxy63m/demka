@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>ProductCard</class>
+ <widget class="QFrame" name="ProductCard">
+  <property name="minimumSize"><size><width>400</width><height>200</height></size></property>
+  <property name="frameShape"><enum>QFrame::NoFrame</enum></property>
+  <layout class="QHBoxLayout" name="main_layout">
+   <item><widget class="QLabel" name="photo_label"><property name="minimumSize"><size><width>300</width><height>200</height></size></property><property name="alignment"><set>Qt::AlignCenter</set></property></widget></item>
+   <item>
+    <widget class="QScrollArea" name="scroll_center">
+     <property name="widgetResizable"><bool>true</bool></property>
+     <property name="frameShape"><enum>QFrame::NoFrame</enum></property>
+     <property name="horizontalScrollBarPolicy"><enum>Qt::ScrollBarAlwaysOff</enum></property>
+     <widget class="QWidget" name="center_widget">
+      <layout class="QVBoxLayout" name="center_layout">
+       <item><widget class="QLabel" name="lbl_header"/></item>
+       <item><widget class="QLabel" name="lbl_desc_title"/></item>
+       <item><widget class="QLabel" name="lbl_desc"/></item>
+       <item><widget class="QLabel" name="lbl_manufacturer"/></item>
+       <item><widget class="QLabel" name="lbl_supplier"/></item>
+       <item><widget class="QLabel" name="lbl_price"/></item>
+       <item><widget class="QLabel" name="lbl_unit"/></item>
+       <item><widget class="QLabel" name="lbl_stock"/></item>
+      </layout>
+     </widget>
+    </widget>
+   </item>
+   <item>
+    <widget class="QWidget" name="right_column">
+     <property name="minimumSize"><size><width>180</width><height>0</height></size></property>
+     <layout class="QVBoxLayout" name="vl_actions">
+      <item><widget class="QLabel" name="discount_label"><property name="minimumSize"><size><width>160</width><height>50</height></size></property><property name="alignment"><set>Qt::AlignCenter</set></property><property name="wordWrap"><bool>true</bool></property></widget></item>
+      <item><widget class="QPushButton" name="btn_delete"><property name="text"><string>Удалить</string></property></widget></item>
+     </layout>
+    </widget>
+   </item>
+  </layout>
+ </widget>
+ <resources/><connections/>
+</ui>

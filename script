@@ -1,0 +1,2 @@
+Импорт из Excel в БД (xlsx и фото — путь в App/config.py, DATA_DIR):
+python import_to_db.py

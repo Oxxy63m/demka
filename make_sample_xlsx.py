@@ -1,6 +1,6 @@
 """
 Создаёт пример data.xlsx с листами и заголовками столбцов.
-Заполните данные и запустите: python load_xlsx.py
+Заполните данные и запустите: python import_to_db.py (xlsx в папке import/)
 """
 import os
 import pandas as pd

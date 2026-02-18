@@ -1,15 +1,31 @@
+# Точка входа приложения (структура как DemoExamenShoes: App + UI)
 import os
 import sys
 
 from PySide6.QtWidgets import QApplication
-from PySide6.QtGui import QImage
+from PySide6.QtGui import QImage, QFont
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from config import IMAGE_MAX_WIDTH, IMAGE_MAX_HEIGHT, PLACEHOLDER_IMAGE
-from ui.login_window import LoginWindow
-from ui.product_list_window import ProductListWindow
+from App.config import IMAGE_MAX_WIDTH, IMAGE_MAX_HEIGHT, PLACEHOLDER_IMAGE, ROOT
+from App.Login import Login
+from App.Main import Main
 
-ROOT = os.path.dirname(os.path.abspath(__file__))
+# Крупный интерфейс: шрифт ~2x, кнопки в 1.5 раза больше
+APP_FONT_SIZE = 16
+APP_FONT_SIZE_SMALL = 13
+BUTTON_MIN_HEIGHT = 42
+
+
+def app_stylesheet():
+    return f"""
+    QWidget {{ font-size: {APP_FONT_SIZE}pt; }}
+    QLabel {{ font-size: {APP_FONT_SIZE}pt; }}
+    QLineEdit, QComboBox, QSpinBox, QDoubleSpinBox, QTextEdit, QDateEdit {{ font-size: {APP_FONT_SIZE}pt; min-height: 28px; }}
+    QPushButton {{ font-size: {APP_FONT_SIZE}pt; min-height: {BUTTON_MIN_HEIGHT}px; min-width: 100px; }}
+    QTableWidget {{ font-size: {APP_FONT_SIZE_SMALL}pt; }}
+    QGroupBox {{ font-size: {APP_FONT_SIZE}pt; font-weight: bold; }}
+    QGroupBox::title {{ subcontrol-origin: margin; left: 10px; padding: 0 4px; }}
+    """
 
 
 def main():
@@ -22,11 +38,15 @@ def main():
         img.save(placeholder_path)
     app = QApplication(sys.argv)
     app.setApplicationName("Система учёта товаров")
+    app.setStyleSheet(app_stylesheet())
+    font = QFont()
+    font.setPointSize(APP_FONT_SIZE)
+    app.setFont(font)
     while True:
-        login = LoginWindow()
-        if login.exec() != LoginWindow.DialogCode.Accepted:
+        login = Login()
+        if login.exec() != Login.DialogCode.Accepted:
             break
-        win = ProductListWindow(login.get_user())
+        win = Main(login.get_user())
         win.showMaximized()
         app.exec()
     sys.exit(0)

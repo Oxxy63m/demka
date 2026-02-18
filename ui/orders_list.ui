@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>OrderListWindow</class>
+ <widget class="QMainWindow" name="OrderListWindow">
+  <property name="windowTitle"><string>Заказы</string></property>
+  <widget class="QWidget" name="centralwidget">
+   <layout class="QVBoxLayout" name="verticalLayout">
+    <item>
+     <layout class="QHBoxLayout" name="head">
+      <item><widget class="QLabel" name="lbl_title"><property name="text"><string>Заказы</string></property></widget></item>
+      <item><widget class="QPushButton" name="btn_back"><property name="text"><string>Назад</string></property></widget></item>
+      <item><spacer name="horizontalSpacer"><property name="orientation"><enum>Qt::Horizontal</enum></property><property name="sizeHint"><size><width>40</width><height>20</height></size></property></spacer></item>
+      <item><widget class="QLabel" name="lbl_user"><property name="text"><string>Гость</string></property></widget></item>
+     </layout>
+    </item>
+    <item>
+     <layout class="QHBoxLayout" name="row_buttons">
+      <item><widget class="QPushButton" name="btn_add"><property name="text"><string>Добавить заказ</string></property></widget></item>
+      <item><widget class="QPushButton" name="btn_del"><property name="text"><string>Удалить заказ</string></property></widget></item>
+     </layout>
+    </item>
+    <item>
+     <widget class="QTableWidget" name="table">
+      <property name="columnCount"><number>6</number></property>
+      <column><property name="text"><string>Артикул заказа</string></property></column>
+      <column><property name="text"><string>Статус заказа</string></property></column>
+      <column><property name="text"><string>Адрес пункта выдачи</string></property></column>
+      <column><property name="text"><string>Дата заказа</string></property></column>
+      <column><property name="text"><string>Дата доставки</string></property></column>
+      <column><property name="text"><string>Клиент</string></property></column>
+     </widget>
+    </item>
+   </layout>
+  </widget>
+ </widget>
+ <resources/><connections/>
+</ui>
