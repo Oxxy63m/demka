@@ -13,14 +13,14 @@
      <property name="horizontalScrollBarPolicy"><enum>Qt::ScrollBarAlwaysOff</enum></property>
      <widget class="QWidget" name="center_widget">
       <layout class="QVBoxLayout" name="center_layout">
-       <item><widget class="QLabel" name="lbl_header"/></item>
-       <item><widget class="QLabel" name="lbl_desc_title"/></item>
-       <item><widget class="QLabel" name="lbl_desc"/></item>
-       <item><widget class="QLabel" name="lbl_manufacturer"/></item>
-       <item><widget class="QLabel" name="lbl_supplier"/></item>
-       <item><widget class="QLabel" name="lbl_price"/></item>
-       <item><widget class="QLabel" name="lbl_unit"/></item>
-       <item><widget class="QLabel" name="lbl_stock"/></item>
+       <item><widget class="QLabel" name="lbl_header"><property name="wordWrap"><bool>true</bool></property></widget></item>
+       <item><widget class="QLabel" name="lbl_desc_title"><property name="wordWrap"><bool>true</bool></property></widget></item>
+       <item><widget class="QLabel" name="lbl_desc"><property name="wordWrap"><bool>true</bool></property></widget></item>
+       <item><widget class="QLabel" name="lbl_manufacturer"><property name="wordWrap"><bool>true</bool></property></widget></item>
+       <item><widget class="QLabel" name="lbl_supplier"><property name="wordWrap"><bool>true</bool></property></widget></item>
+       <item><widget class="QLabel" name="lbl_price"><property name="wordWrap"><bool>true</bool></property></widget></item>
+       <item><widget class="QLabel" name="lbl_unit"><property name="wordWrap"><bool>true</bool></property></widget></item>
+       <item><widget class="QLabel" name="lbl_stock"><property name="wordWrap"><bool>true</bool></property></widget></item>
       </layout>
      </widget>
     </widget>

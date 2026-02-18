@@ -5,19 +5,22 @@ from PySide6.QtCore import Qt, Signal
 from PySide6.QtGui import QPixmap, QColor, QAction
 from PySide6.QtUiTools import loadUiType
 
-from App.config import UI, PLACEHOLDER_IMAGE, IMAGE_MAX_WIDTH, IMAGE_MAX_HEIGHT, ROOT, DATA_DIR
+from App.config import UI, PLACEHOLDER_IMAGE, IMAGE_MAX_WIDTH, IMAGE_MAX_HEIGHT, ROOT, DATA_DIR, RESOURCES_DIR
 
 Ui_Card, BaseCard = loadUiType(UI["card"])
 
 
 def _photo_pixmap(image_path, width=IMAGE_MAX_WIDTH, height=IMAGE_MAX_HEIGHT):
+    """Иконка товара: из Excel (колонка Фото) → ищем в DATA_DIR, затем в папке resources."""
     path = ""
     if image_path:
         path = os.path.join(DATA_DIR, image_path)
         if not os.path.isfile(path):
+            path = os.path.join(RESOURCES_DIR, image_path)
+        if not os.path.isfile(path):
             path = os.path.join(ROOT, image_path)
     if not path or not os.path.isfile(path):
-        path = os.path.join(ROOT, "resources", PLACEHOLDER_IMAGE)
+        path = os.path.join(RESOURCES_DIR, PLACEHOLDER_IMAGE)
     if path and os.path.isfile(path):
         pix = QPixmap(path)
         if not pix.isNull():
@@ -50,12 +53,17 @@ class Card(BaseCard, Ui_Card):
                 self.btn_delete.clicked.connect(lambda: self.delete_requested.emit(self.product_id))
 
     def _fill_card(self):
+        for lbl in (
+            self.lbl_header, self.lbl_desc_title, self.lbl_desc,
+            self.lbl_manufacturer, self.lbl_supplier, self.lbl_price,
+            self.lbl_unit, self.lbl_stock, self.discount_label,
+        ):
+            lbl.setWordWrap(True)
         cat = (self.product.get("category") or "").strip()
         name = (self.product.get("product_name") or "").strip()
         header = f"{cat} | {name}" if cat and name else (name or cat or "—")
         self.lbl_header.setText(header)
         self.lbl_header.setStyleSheet("font-weight: bold; font-size: 14pt;")
-        self.lbl_header.setWordWrap(True)
         self.lbl_desc_title.setText("Описание товара:")
         desc = (self.product.get("description") or "").strip()
         self.lbl_desc.setText(desc or "—")
@@ -74,7 +82,6 @@ class Card(BaseCard, Ui_Card):
         self.lbl_stock.setText("Количество на складе: " + str(int(self.product.get("stock_quantity") or 0)))
         discount_val = int(discount) if discount == int(discount) else discount
         self.discount_label.setText("Действующая скидка\n\n" + (f"{discount_val} %" if discount else "—"))
-        self.discount_label.setWordWrap(True)
         self.discount_label.setStyleSheet("font-weight: bold; padding: 8px; background: #f8f8f8;")
         self.photo_label.setPixmap(_photo_pixmap(self.product.get("photo")))
         self.photo_label.setStyleSheet("background: #f0f0f0;")

@@ -5,10 +5,10 @@
   <property name="windowTitle"><string>Вход в систему</string></property>
   <property name="minimumSize"><size><width>440</width><height>320</height></size></property>
   <layout class="QVBoxLayout" name="verticalLayout">
-   <item><widget class="QLabel" name="lbl_title"><property name="text"><string>Система учёта товаров</string></property><property name="alignment"><set>Qt::AlignCenter</set></property></widget></item>
-   <item><widget class="QLabel" name="lbl_login"><property name="text"><string>Логин:</string></property></widget></item>
+   <item><widget class="QLabel" name="lbl_title"><property name="text"><string>Система учёта товаров</string></property><property name="alignment"><set>Qt::AlignCenter</set></property><property name="wordWrap"><bool>true</bool></property></widget></item>
+   <item><widget class="QLabel" name="lbl_login"><property name="text"><string>Логин:</string></property><property name="wordWrap"><bool>true</bool></property></widget></item>
    <item><widget class="QLineEdit" name="login_edit"><property name="placeholderText"><string>Введите логин</string></property></widget></item>
-   <item><widget class="QLabel" name="lbl_password"><property name="text"><string>Пароль:</string></property></widget></item>
+   <item><widget class="QLabel" name="lbl_password"><property name="text"><string>Пароль:</string></property><property name="wordWrap"><bool>true</bool></property></widget></item>
    <item><widget class="QLineEdit" name="password_edit"><property name="placeholderText"><string>Введите пароль</string></property><property name="echoMode"><enum>QLineEdit::Password</enum></property></widget></item>
    <item>
     <layout class="QHBoxLayout" name="hl_buttons">

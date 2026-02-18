@@ -25,7 +25,9 @@ DB_CONFIG = {
     "password": os.environ.get("DB_PASSWORD", "1234"),
 }
 
-# Папка для фото товаров и заглушка
+# Папка с ресурсами (иконки товаров по имени из Excel + заглушка)
+RESOURCES_DIR = os.path.join(ROOT, "resources")
+# Папка для загруженных фото товаров и заглушка
 IMAGES_FOLDER = "product_images"
 IMAGE_MAX_WIDTH = 300
 IMAGE_MAX_HEIGHT = 200

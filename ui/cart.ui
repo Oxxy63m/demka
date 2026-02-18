@@ -8,6 +8,7 @@
    <item>
     <widget class="QLabel" name="lbl_title">
      <property name="text"><string>Оформление заказа</string></property>
+     <property name="wordWrap"><bool>true</bool></property>
     </widget>
    </item>
    <item>
@@ -23,16 +24,16 @@
     <layout class="QHBoxLayout" name="hl_row">
      <item>
       <layout class="QFormLayout" name="formLayout">
-       <item row="0" column="0"><widget class="QLabel" name="lbl_pickup"><property name="text"><string>Пункт выдачи</string></property></widget></item>
+       <item row="0" column="0"><widget class="QLabel" name="lbl_pickup"><property name="text"><string>Пункт выдачи</string></property><property name="wordWrap"><bool>true</bool></property></widget></item>
        <item row="0" column="1"><widget class="QComboBox" name="cb_pickup"/></item>
-       <item row="1" column="0"><widget class="QLabel" name="lbl_delivery"><property name="text"><string>Дата выдачи/доставки</string></property></widget></item>
+       <item row="1" column="0"><widget class="QLabel" name="lbl_delivery"><property name="text"><string>Дата выдачи/доставки</string></property><property name="wordWrap"><bool>true</bool></property></widget></item>
        <item row="1" column="1"><widget class="QDateEdit" name="de_delivery"><property name="calendarPopup"><bool>true</bool></property></widget></item>
       </layout>
      </item>
      <item>
       <layout class="QVBoxLayout" name="vl_total">
-       <item><widget class="QLabel" name="lbl_total_title"><property name="text"><string>Итого:</string></property></widget></item>
-       <item><widget class="QLabel" name="lbl_total"><property name="text"><string>0.00 ₽</string></property></widget></item>
+       <item><widget class="QLabel" name="lbl_total_title"><property name="text"><string>Итого:</string></property><property name="wordWrap"><bool>true</bool></property></widget></item>
+       <item><widget class="QLabel" name="lbl_total"><property name="text"><string>0.00 ₽</string></property><property name="wordWrap"><bool>true</bool></property></widget></item>
        <item><spacer name="spacer_total"><property name="orientation"><enum>Qt::Vertical</enum></property><property name="sizeHint"><size><width>20</width><height>40</height></size></property></spacer></item>
       </layout>
      </item>

@@ -17,6 +17,7 @@ class Orders(BaseOrders, Ui_Orders):
         self.role = user.get("role", "guest")
         self.edit_open = False
         self.setWindowTitle("Заказы")
+        self.lbl_user.setWordWrap(True)
         self.lbl_user.setText(user.get("full_name", "Гость"))
         self.btn_back.clicked.connect(self.close)
         if self.role != ROLE_ADMINISTRATOR:

@@ -5,7 +5,7 @@ from PySide6.QtCore import Qt, Signal
 from PySide6.QtGui import QPixmap, QImage
 from PySide6.QtUiTools import loadUiType
 
-from App.config import UI, ROOT, DATA_DIR, IMAGES_FOLDER, IMAGE_MAX_WIDTH, IMAGE_MAX_HEIGHT, PLACEHOLDER_IMAGE
+from App.config import UI, ROOT, DATA_DIR, RESOURCES_DIR, IMAGES_FOLDER, IMAGE_MAX_WIDTH, IMAGE_MAX_HEIGHT, PLACEHOLDER_IMAGE
 from logic.product_edit import (
     load_product as load_product_by_id,
     save_product as save_product_to_db,
@@ -17,7 +17,7 @@ Ui_ProdForm, BaseProdForm = loadUiType(UI["prod"])
 
 
 def _placeholder():
-    path = os.path.join(ROOT, "resources", PLACEHOLDER_IMAGE)
+    path = os.path.join(RESOURCES_DIR, PLACEHOLDER_IMAGE)
     if os.path.isfile(path):
         pix = QPixmap(path)
         if not pix.isNull():
@@ -172,6 +172,7 @@ class ProdForm(BaseProdForm, Ui_ProdForm):
         candidates = [self.new_photo_path]
         if path:
             candidates.append(os.path.join(DATA_DIR, path))
+            candidates.append(os.path.join(RESOURCES_DIR, path))
             candidates.append(os.path.join(ROOT, path))
         for fp in candidates:
             if fp and os.path.isfile(fp):

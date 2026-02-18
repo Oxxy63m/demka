@@ -19,6 +19,7 @@ class Main(BaseMain, Ui_Main):
         self.edit_open = False
         self.setWindowTitle("Список товаров")
         self.lbl_title.setStyleSheet("font-weight: bold; font-size: 18pt;")
+        self.lbl_user.setWordWrap(True)
         self.lbl_user.setText(user.get("full_name", "Гость"))
         _filter_widgets = (self.lbl_search, self.search_edit, self.lbl_supplier, self.supplier_combo, self.lbl_sort, self.sort_combo)
         if self.role not in (ROLE_MANAGER, ROLE_ADMINISTRATOR):
