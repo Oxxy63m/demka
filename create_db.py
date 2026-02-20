@@ -10,43 +10,43 @@ DB_NAME = "demka"
 
 
 def main():
-    conn = psycopg2.connect(
+    connection_to_postgres = psycopg2.connect(
         host=DB_CONFIG["host"],
         port=DB_CONFIG["port"],
         database="postgres",
         user=DB_CONFIG["user"],
         password=DB_CONFIG["password"],
     )
-    conn.autocommit = True
-    with conn.cursor() as cur:
-        cur.execute("SELECT 1 FROM pg_database WHERE datname = %s", (DB_NAME,))
-        if cur.fetchone():
+    connection_to_postgres.autocommit = True
+    with connection_to_postgres.cursor() as cursor:
+        cursor.execute("SELECT 1 FROM pg_database WHERE datname = %s", (DB_NAME,))
+        if cursor.fetchone():
             print(f"БД '{DB_NAME}' уже существует.")
         else:
-            cur.execute(f'CREATE DATABASE "{DB_NAME}"')
+            cursor.execute(f'CREATE DATABASE "{DB_NAME}"')
             print(f"БД '{DB_NAME}' создана.")
-    conn.close()
+    connection_to_postgres.close()
 
     schema_path = os.path.join(os.path.dirname(__file__), "DB.sql")
-    with open(schema_path, "r", encoding="utf-8") as f:
-        schema_sql = f.read()
-    conn = psycopg2.connect(
+    with open(schema_path, "r", encoding="utf-8") as schema_file:
+        schema_sql = schema_file.read()
+    connection_to_demka = psycopg2.connect(
         host=DB_CONFIG["host"],
         port=DB_CONFIG["port"],
         database=DB_NAME,
         user=DB_CONFIG["user"],
         password=DB_CONFIG["password"],
     )
-    with conn.cursor() as cur:
-        cur.execute(schema_sql)
-    conn.commit()
-    conn.close()
+    with connection_to_demka.cursor() as cursor:
+        cursor.execute(schema_sql)
+    connection_to_demka.commit()
+    connection_to_demka.close()
     print("Таблицы созданы.")
 
 
 if __name__ == "__main__":
     try:
         main()
-    except Exception as e:
-        print("Ошибка:", e)
+    except Exception as error:
+        print("Ошибка:", error)
         sys.exit(1)

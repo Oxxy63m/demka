@@ -5,6 +5,7 @@
   <property name="windowTitle"><string>Вход в систему</string></property>
   <property name="minimumSize"><size><width>440</width><height>320</height></size></property>
   <layout class="QVBoxLayout" name="verticalLayout">
+   <item><widget class="QLabel" name="lbl_logo"><property name="minimumSize"><size><width>120</width><height>120</height></size></property><property name="alignment"><set>Qt::AlignCenter</set></property><property name="scaledContents"><bool>false</bool></property></widget></item>
    <item><widget class="QLabel" name="lbl_title"><property name="text"><string>Система учёта товаров</string></property><property name="alignment"><set>Qt::AlignCenter</set></property><property name="wordWrap"><bool>true</bool></property></widget></item>
    <item><widget class="QLabel" name="lbl_login"><property name="text"><string>Логин:</string></property><property name="wordWrap"><bool>true</bool></property></widget></item>
    <item><widget class="QLineEdit" name="login_edit"><property name="placeholderText"><string>Введите логин</string></property></widget></item>
