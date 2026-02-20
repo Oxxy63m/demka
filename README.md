@@ -24,3 +24,8 @@
 ## Изображения товаров
 
 - Сохраняются в папку `product_images`, размер 300×200. Заглушка: `resources/picture.png` (создаётся при первом запуске).
+
+import_to_db.py - это импорт с excel
+migrate_to_3nf.py - не трогаем
+create_db.py - не трогаем
+DB.sql - скрипт для создания БД
