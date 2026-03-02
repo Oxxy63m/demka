@@ -1,58 +1,61 @@
--- Схема БД в третьей нормальной форме (3НФ)
--- Справочники: roles, suppliers, manufacturers, categories, order_statuses, pickup_points
--- Основные: users, products, orders, order_items
+-- Схема БД в третьей нормальной форме (3НФ), исправленная по замечаниям
+-- Без order_article в orders (вычисляется из order_items + products)
+-- unit_price в order_items (историчность), UNIQUE(order_id, product_id)
+-- units справочник, article NOT NULL UNIQUE, password_hash
 
--- Справочник ролей (устраняет повторение role в users)
+-- Справочники
 CREATE TABLE roles (
     role_id SERIAL PRIMARY KEY,
     name VARCHAR(100) NOT NULL UNIQUE
 );
 
--- Справочник поставщиков (устраняет повторение supplier в products)
 CREATE TABLE suppliers (
     supplier_id SERIAL PRIMARY KEY,
     name VARCHAR(255) NOT NULL
 );
 
--- Справочник производителей
 CREATE TABLE manufacturers (
     manufacturer_id SERIAL PRIMARY KEY,
     name VARCHAR(255) NOT NULL
 );
 
--- Справочник категорий
 CREATE TABLE categories (
     category_id SERIAL PRIMARY KEY,
     name VARCHAR(255) NOT NULL
 );
 
--- Справочник статусов заказа
+CREATE TABLE units (
+    unit_id SERIAL PRIMARY KEY,
+    code VARCHAR(20) NOT NULL UNIQUE,
+    name VARCHAR(100) NOT NULL
+);
+
 CREATE TABLE order_statuses (
     status_id SERIAL PRIMARY KEY,
     name VARCHAR(100) NOT NULL UNIQUE
 );
 
--- Справочник пунктов выдачи
 CREATE TABLE pickup_points (
     pickup_point_id SERIAL PRIMARY KEY,
     address VARCHAR(500) NOT NULL
 );
 
--- Пользователи: роль по FK (3НФ)
+-- Пользователи (password_hash — для хранения хеша, не plain text)
 CREATE TABLE users (
     user_id SERIAL PRIMARY KEY,
     full_name VARCHAR(255) NOT NULL,
     login VARCHAR(255) NOT NULL UNIQUE,
-    user_password VARCHAR(255) NOT NULL,
-    role_id INTEGER NOT NULL REFERENCES roles(role_id) ON DELETE RESTRICT
+    password_hash VARCHAR(255) NOT NULL,
+    role_id INTEGER NOT NULL REFERENCES roles(role_id) ON DELETE RESTRICT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT now()
 );
 
--- Товары: поставщик, производитель, категория по FK (3НФ)
+-- Товары: article уникален и NOT NULL, unit_id FK
 CREATE TABLE products (
     id SERIAL PRIMARY KEY,
-    article VARCHAR(50),
+    article VARCHAR(50) NOT NULL UNIQUE,
     product_name VARCHAR(255) NOT NULL,
-    unit VARCHAR(20),
+    unit_id INTEGER REFERENCES units(unit_id) ON DELETE SET NULL,
     price NUMERIC(10, 2) NOT NULL CHECK (price >= 0),
     supplier_id INTEGER REFERENCES suppliers(supplier_id) ON DELETE SET NULL,
     manufacturer_id INTEGER REFERENCES manufacturers(manufacturer_id) ON DELETE SET NULL,
@@ -63,29 +66,31 @@ CREATE TABLE products (
     photo VARCHAR(255)
 );
 
--- Заказы: статус и пункт выдачи по FK (3НФ)
+-- Заказы: без order_article (данные о товарах только в order_items)
 CREATE TABLE orders (
     order_id SERIAL PRIMARY KEY,
-    order_article VARCHAR(500),
-    order_date DATE NOT NULL,
+    order_date DATE NOT NULL DEFAULT CURRENT_DATE,
     delivery_date DATE,
     pickup_point_id INTEGER REFERENCES pickup_points(pickup_point_id) ON DELETE SET NULL,
     user_id INTEGER NOT NULL REFERENCES users(user_id) ON DELETE RESTRICT,
-    pickup_code INTEGER,
-    status_id INTEGER REFERENCES order_statuses(status_id) ON DELETE SET NULL
+    pickup_code VARCHAR(50),
+    status_id INTEGER REFERENCES order_statuses(status_id) ON DELETE SET NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT now()
 );
 
--- Позиции заказа (артикул заказа вычисляется из order_items + products, без отдельной таблицы)
+-- Позиции заказа: unit_price — цена в момент заказа (историчность), UNIQUE(order_id, product_id)
 CREATE TABLE order_items (
     order_item_id SERIAL PRIMARY KEY,
     order_id INTEGER NOT NULL REFERENCES orders(order_id) ON DELETE CASCADE,
     product_id INTEGER NOT NULL REFERENCES products(id) ON DELETE RESTRICT,
-    quantity INTEGER NOT NULL CHECK (quantity > 0)
+    quantity INTEGER NOT NULL CHECK (quantity > 0),
+    unit_price NUMERIC(10, 2) NOT NULL CHECK (unit_price >= 0),
+    CONSTRAINT uq_order_product UNIQUE (order_id, product_id)
 );
 
--- Начальные данные справочников (чтобы приложение работало сразу)
+-- Начальные данные
 INSERT INTO roles (name) VALUES ('guest'), ('client'), ('manager'), ('administrator');
 INSERT INTO order_statuses (name) VALUES ('новый'), ('в обработке'), ('доставляется'), ('выполнен'), ('отменён');
+INSERT INTO units (code, name) VALUES ('шт', 'Штуки'), ('кг', 'Килограммы'), ('уп', 'Упаковка');
 
--- Если после многократного импорта сбилась нумерация id — выполни:
 -- TRUNCATE users, products, orders, order_items RESTART IDENTITY CASCADE;

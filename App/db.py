@@ -20,7 +20,7 @@ def auth_user(login, password):
     cursor = connection.cursor(cursor_factory=RealDictCursor)
     cursor.execute(
         "SELECT u.user_id, u.login, u.full_name, r.name AS role FROM users u "
-        "JOIN roles r ON u.role_id = r.role_id WHERE TRIM(u.login) = %s AND TRIM(u.user_password) = %s",
+        "JOIN roles r ON u.role_id = r.role_id WHERE TRIM(u.login) = %s AND TRIM(u.password_hash) = %s",
         (login, password),
     )
     user_row = cursor.fetchone()
@@ -36,16 +36,17 @@ def get_products_all(search_text="", supplier_name=None, order_by_quantity=None)
     cursor = connection.cursor(cursor_factory=RealDictCursor)
     query = (
         "SELECT p.id, p.article, p.product_name, c.name AS category, p.description, m.name AS manufacturer, "
-        "s.name AS supplier, p.price, p.unit, p.stock_quantity, p.discount, p.photo "
+        "s.name AS supplier, p.price, u.code AS unit, p.stock_quantity, p.discount, p.photo "
         "FROM products p "
         "LEFT JOIN categories c ON p.category_id = c.category_id "
         "LEFT JOIN manufacturers m ON p.manufacturer_id = m.manufacturer_id "
-        "LEFT JOIN suppliers s ON p.supplier_id = s.supplier_id WHERE 1=1"
+        "LEFT JOIN suppliers s ON p.supplier_id = s.supplier_id "
+        "LEFT JOIN units u ON p.unit_id = u.unit_id WHERE 1=1"
     )
     query_params = []
     if search_text and search_text.strip():
         search_pattern = "%" + search_text.strip() + "%"
-        query += " AND (p.article ILIKE %s OR p.product_name ILIKE %s OR p.description ILIKE %s OR c.name ILIKE %s OR m.name ILIKE %s OR s.name ILIKE %s OR p.unit ILIKE %s)"
+        query += " AND (p.article ILIKE %s OR p.product_name ILIKE %s OR p.description ILIKE %s OR c.name ILIKE %s OR m.name ILIKE %s OR s.name ILIKE %s OR u.code ILIKE %s)"
         query_params = [search_pattern, search_pattern, search_pattern, search_pattern, search_pattern, search_pattern, search_pattern]
     if supplier_name:
         query += " AND s.name = %s"
@@ -68,10 +69,11 @@ def get_product_by_id(product_id):
     cursor = connection.cursor(cursor_factory=RealDictCursor)
     cursor.execute(
         "SELECT p.id, p.article, p.product_name, c.name AS category, p.description, m.name AS manufacturer, "
-        "s.name AS supplier, p.price, p.unit, p.stock_quantity, p.discount, p.photo "
+        "s.name AS supplier, p.price, u.code AS unit, p.stock_quantity, p.discount, p.photo "
         "FROM products p LEFT JOIN categories c ON p.category_id = c.category_id "
         "LEFT JOIN manufacturers m ON p.manufacturer_id = m.manufacturer_id "
-        "LEFT JOIN suppliers s ON p.supplier_id = s.supplier_id WHERE p.id = %s",
+        "LEFT JOIN suppliers s ON p.supplier_id = s.supplier_id "
+        "LEFT JOIN units u ON p.unit_id = u.unit_id WHERE p.id = %s",
         (product_id,),
     )
     product_row = cursor.fetchone()
@@ -104,6 +106,16 @@ def get_manufacturer_names():
     connection = psycopg2.connect(**DB_CONFIG)
     cursor = connection.cursor()
     cursor.execute("SELECT name FROM manufacturers ORDER BY name")
+    result_rows = cursor.fetchall()
+    cursor.close()
+    connection.close()
+    return [r[0] for r in result_rows]
+
+
+def get_unit_names():
+    connection = psycopg2.connect(**DB_CONFIG)
+    cursor = connection.cursor()
+    cursor.execute("SELECT code FROM units ORDER BY code")
     result_rows = cursor.fetchall()
     cursor.close()
     connection.close()
@@ -146,6 +158,18 @@ def _get_or_create_category_id(cursor, name):
     return cursor.fetchone()[0]
 
 
+def _get_or_create_unit_id(cursor, code_or_name):
+    if not code_or_name or not str(code_or_name).strip():
+        return None
+    val = str(code_or_name).strip()
+    cursor.execute("SELECT unit_id FROM units WHERE code = %s OR name = %s", (val, val))
+    row = cursor.fetchone()
+    if row:
+        return row[0]
+    cursor.execute("INSERT INTO units (code, name) VALUES (%s, %s) RETURNING unit_id", (val, val))
+    return cursor.fetchone()[0]
+
+
 def product_in_orders(product_id):
     connection = psycopg2.connect(**DB_CONFIG)
     cursor = connection.cursor()
@@ -162,13 +186,17 @@ def insert_product(data):
     supplier_id = _get_or_create_supplier_id(cursor, data.get("supplier"))
     manufacturer_id = _get_or_create_manufacturer_id(cursor, data.get("manufacturer"))
     category_id = _get_or_create_category_id(cursor, data.get("category"))
+    unit_id = _get_or_create_unit_id(cursor, data.get("unit"))
+    article = (data.get("article") or "").strip()
+    if not article:
+        article = "TMP"
     cursor.execute(
-        "INSERT INTO products (article, product_name, unit, price, supplier_id, manufacturer_id, category_id, discount, stock_quantity, description, photo) "
+        "INSERT INTO products (article, product_name, unit_id, price, supplier_id, manufacturer_id, category_id, discount, stock_quantity, description, photo) "
         "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING id",
         (
-            data.get("article"),
+            article,
             data.get("product_name"),
-            data.get("unit"),
+            unit_id,
             data.get("price"),
             supplier_id,
             manufacturer_id,
@@ -180,6 +208,8 @@ def insert_product(data):
         ),
     )
     inserted_product_id = cursor.fetchone()[0]
+    if article == "TMP":
+        cursor.execute("UPDATE products SET article = %s WHERE id = %s", ("ART-" + str(inserted_product_id), inserted_product_id))
     connection.commit()
     cursor.close()
     connection.close()
@@ -192,13 +222,17 @@ def update_product(product_id, data):
     supplier_id = _get_or_create_supplier_id(cursor, data.get("supplier"))
     manufacturer_id = _get_or_create_manufacturer_id(cursor, data.get("manufacturer"))
     category_id = _get_or_create_category_id(cursor, data.get("category"))
+    unit_id = _get_or_create_unit_id(cursor, data.get("unit"))
+    article = (data.get("article") or "").strip()
+    if not article:
+        article = "ART-" + str(product_id)
     cursor.execute(
-        "UPDATE products SET article=%s, product_name=%s, unit=%s, price=%s, supplier_id=%s, manufacturer_id=%s, category_id=%s, "
+        "UPDATE products SET article=%s, product_name=%s, unit_id=%s, price=%s, supplier_id=%s, manufacturer_id=%s, category_id=%s, "
         "discount=%s, stock_quantity=%s, description=%s, photo=%s WHERE id=%s",
         (
-            data.get("article"),
+            article,
             data.get("product_name"),
-            data.get("unit"),
+            unit_id,
             data.get("price"),
             supplier_id,
             manufacturer_id,
