@@ -66,7 +66,7 @@ def import_users(connection, path_to_file):
             continue
         cursor.execute(
             """
-            INSERT INTO users (full_name, login, user_password, role_id)
+            INSERT INTO users (full_name, login, password_hash, role_id)
             VALUES (%s, %s, %s, %s)
             ON CONFLICT (login) DO NOTHING;
             """,

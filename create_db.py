@@ -1,57 +1,43 @@
-# =============================================================================
-# СОЗДАНИЕ БАЗЫ ДАННЫХ (запускать первым, один раз)
-# Запуск: python create_db.py
-# Что делает: создаёт базу "demka" и все таблицы по скрипту DB.sql.
-# Пароль и хост БД задаются в App/config.py (DB_CONFIG).
-# =============================================================================
+# Создание БД: python create_db.py (один раз)
 import os
 import sys
-
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import psycopg2
 from App.config import DB_CONFIG
 
-DB_NAME = "demka"
+NAME = "demka"
 
 
 def main():
-    connection_to_postgres = psycopg2.connect(
-        host=DB_CONFIG["host"],
-        port=DB_CONFIG["port"],
-        database="postgres",
-        user=DB_CONFIG["user"],
-        password=DB_CONFIG["password"],
-    )
-    connection_to_postgres.autocommit = True
-    with connection_to_postgres.cursor() as cursor:
-        cursor.execute("SELECT 1 FROM pg_database WHERE datname = %s", (DB_NAME,))
-        if cursor.fetchone():
-            print(f"БД '{DB_NAME}' уже существует.")
-        else:
-            cursor.execute(f'CREATE DATABASE "{DB_NAME}"')
-            print(f"БД '{DB_NAME}' создана.")
-    connection_to_postgres.close()
+    conn = psycopg2.connect(host=DB_CONFIG["host"], port=DB_CONFIG["port"], database="postgres",
+                            user=DB_CONFIG["user"], password=DB_CONFIG["password"])
+    conn.autocommit = True
+    cur = conn.cursor()
+    cur.execute("SELECT 1 FROM pg_database WHERE datname = %s", (NAME,))
+    if not cur.fetchone():
+        cur.execute(f'CREATE DATABASE "{NAME}"')
+        print("БД создана.")
+    else:
+        print("БД уже есть.")
+    cur.close()
+    conn.close()
 
-    schema_path = os.path.join(os.path.dirname(__file__), "DB.sql")
-    with open(schema_path, "r", encoding="utf-8") as schema_file:
-        schema_sql = schema_file.read()
-    connection_to_demka = psycopg2.connect(
-        host=DB_CONFIG["host"],
-        port=DB_CONFIG["port"],
-        database=DB_NAME,
-        user=DB_CONFIG["user"],
-        password=DB_CONFIG["password"],
-    )
-    with connection_to_demka.cursor() as cursor:
-        cursor.execute(schema_sql)
-    connection_to_demka.commit()
-    connection_to_demka.close()
+    path = os.path.join(os.path.dirname(__file__), "DB.sql")
+    with open(path, "r", encoding="utf-8") as f:
+        sql = f.read()
+    conn = psycopg2.connect(host=DB_CONFIG["host"], port=DB_CONFIG["port"], database=NAME,
+                            user=DB_CONFIG["user"], password=DB_CONFIG["password"])
+    cur = conn.cursor()
+    cur.execute(sql)
+    conn.commit()
+    cur.close()
+    conn.close()
     print("Таблицы созданы.")
 
 
 if __name__ == "__main__":
     try:
         main()
-    except Exception as error:
-        print("Ошибка:", error)
+    except Exception as e:
+        print("Ошибка:", e)
         sys.exit(1)
