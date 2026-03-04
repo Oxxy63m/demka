@@ -1,4 +1,4 @@
-# App/ProdForm.py — форма товара, разметка из UI/product_form.ui
+# Форма добавления и редактирования товара: поля артикула, названия, категории, цены, фото и т.д. Разметка — ui/product_form.ui.
 import os
 from PySide6.QtWidgets import QDialog, QFileDialog, QMessageBox
 from PySide6.QtCore import Qt, Signal
@@ -18,6 +18,7 @@ Ui_ProdForm, BaseProdForm = loadUiType(UI["prod"])
 
 
 def _placeholder_pixmap():
+    """Возвращает изображение-заглушку для поля фото (picture.png или серый прямоугольник)."""
     path = _resolve_product_photo_path(PLACEHOLDER_IMAGE) or os.path.join(RESOURCES_DIR, PLACEHOLDER_IMAGE)
     if os.path.isfile(path):
         pixmap = QPixmap(path)
@@ -29,6 +30,7 @@ def _placeholder_pixmap():
 
 
 def _save_uploaded_image_to_folder(source_file_path):
+    """Сохраняет выбранное пользователем изображение в папку проекта и возвращает относительный путь."""
     image = QImage(source_file_path)
     if image.isNull():
         return ""
@@ -90,6 +92,7 @@ class ProdForm(BaseProdForm, Ui_ProdForm):
             self.photo_label.setPixmap(_placeholder_pixmap())
 
     def _load_product(self):
+        """Загружает данные товара из БД и подставляет их в поля формы."""
         try:
             product = load_product_by_id(self.product_id)
         except Exception as load_error:
@@ -134,6 +137,7 @@ class ProdForm(BaseProdForm, Ui_ProdForm):
         self._show_photo()
 
     def _save(self):
+        """Проверяет поля и сохраняет товар в БД (добавление или обновление), затем закрывает форму."""
         product_name = self.name_edit.text().strip()
         if not product_name:
             QMessageBox.warning(self, "Ошибка", "Введите наименование.")
@@ -170,6 +174,7 @@ class ProdForm(BaseProdForm, Ui_ProdForm):
             QMessageBox.critical(self, "Ошибка", str(save_error))
 
     def _show_photo(self, path=None):
+        """Показывает в форме текущее фото: новое загруженное, по пути из БД или заглушку."""
         path_candidates = [self.new_photo_path]
         if path:
             path_candidates.append(_resolve_product_photo_path(path))

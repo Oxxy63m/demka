@@ -1,10 +1,6 @@
-# =============================================================================
-# ИМПОРТ ДАННЫХ ИЗ EXCEL В БАЗУ
-# Запуск: python import_to_db.py
-# Что делает: читает xlsx из папки DATA_DIR (задаётся в App/config.py) и
-# заполняет таблицы: пользователи, товары, заказы, пункты выдачи.
-# Нужные файлы: user_import.xlsx, Tovar.xlsx, Заказ_import.xlsx и др.
-# =============================================================================
+# Импорт данных из Excel в базу. Запуск: python import_to_db.py
+# Читает xlsx из папки DATA_DIR (App/config.py) и заполняет таблицы: пользователи, товары, заказы, позиции заказов.
+# Нужные файлы: user_import.xlsx, Tovar.xlsx, Заказ_import.xlsx, Пункты выдачи_import.xlsx (и при необходимости order_items.xlsx).
 import os
 import sys
 
@@ -18,6 +14,7 @@ from App.db import (
     get_or_create_supplier_id_conn,
     get_or_create_manufacturer_id_conn,
     get_or_create_category_id_conn,
+    get_or_create_unit_id_conn,
     get_or_create_pickup_point_id_conn,
     get_or_create_status_id_conn,
 )
@@ -66,7 +63,7 @@ def import_users(connection, path_to_file):
             continue
         cursor.execute(
             """
-            INSERT INTO users (full_name, login, password_hash, role_id)
+            INSERT INTO users (full_name, login, user_password, role_id)
             VALUES (%s, %s, %s, %s)
             ON CONFLICT (login) DO NOTHING;
             """,
@@ -99,10 +96,11 @@ def import_products(connection, path_to_file):
         supplier_id = get_or_create_supplier_id_conn(connection, product_row.get("Поставщик"))
         manufacturer_id = get_or_create_manufacturer_id_conn(connection, product_row.get("Производитель"))
         category_id = get_or_create_category_id_conn(connection, product_row.get("Категория товара"))
+        unit_id = get_or_create_unit_id_conn(connection, product_row.get("Единица измерения") or "шт.")
         cursor.execute(
             """
             INSERT INTO products (
-                article, product_name, unit, price, supplier_id, manufacturer_id,
+                article, product_name, unit_id, price, supplier_id, manufacturer_id,
                 category_id, discount, stock_quantity, description, photo
             )
             VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s);
@@ -110,7 +108,7 @@ def import_products(connection, path_to_file):
             (
                 product_row.get("Артикул"),
                 str(product_name).strip(),
-                product_row.get("Единица измерения") or "шт.",
+                unit_id,
                 price,
                 supplier_id,
                 manufacturer_id,
@@ -180,24 +178,19 @@ def import_orders(connection, path_to_file, pickup_addresses):
                 pickup_code = int(float(order_row["Код для получения"]))
             except (TypeError, ValueError):
                 pass
+
         status = str(order_row.get("Статус заказа", "") or "").strip() or None
-
-        # Артикул заказа из Excel (колонка "Артикул заказа" или "Артикул")
-        order_article = order_row.get("Артикул заказа") or order_row.get("Артикул")
-        if order_article is not None and not pd.isna(order_article):
-            order_article = str(order_article).strip()
-        else:
-            order_article = None
-
         pickup_point_id = get_or_create_pickup_point_id_conn(connection, pickup_address_string) if pickup_address_string else None
         status_id = get_or_create_status_id_conn(connection, status)
 
+        # В этой версии схемы orders больше нет колонки order_article,
+        # она вычисляется приложением при создании новых заказов.
         cursor.execute(
             """
-            INSERT INTO orders (order_article, order_date, delivery_date, pickup_point_id, user_id, pickup_code, status_id)
-            VALUES (%s, %s, %s, %s, %s, %s, %s);
+            INSERT INTO orders (order_date, delivery_date, pickup_point_id, user_id, pickup_code, status_id)
+            VALUES (%s, %s, %s, %s, %s, %s);
             """,
-            (order_article, order_date, delivery_date, pickup_point_id, user_id, pickup_code, status_id),
+            (order_date, delivery_date, pickup_point_id, user_id, pickup_code, status_id),
         )
         imported_orders_count += 1
     cursor.close()
@@ -222,16 +215,18 @@ def import_order_items(database_cursor, path_to_file):
             continue
         quantity = item_row.get("Количество", 1)
         quantity = int(float(quantity)) if quantity is not None and not pd.isna(quantity) else 1
+        unit_price = item_row.get("Цена", 0)
+        unit_price = float(unit_price) if unit_price is not None and not pd.isna(unit_price) else 0
         database_cursor.execute(
-            "INSERT INTO order_items (order_id, product_id, quantity) VALUES (%s, %s, %s)",
-            (order_id, product_id, quantity),
+            "INSERT INTO order_items (order_id, product_id, quantity, unit_price) VALUES (%s, %s, %s, %s)",
+            (order_id, product_id, quantity, unit_price),
         )
     print(f"✅ Импортировано позиций заказов: {len(order_items_dataframe)}")
     return len(order_items_dataframe)
 
 
 def main():
-    """Основная функция импорта данных."""
+    """Подключается к БД, загружает пункты выдачи, импортирует пользователей, товары, заказы и позиции заказов, делает commit."""
     database_connection = psycopg2.connect(**DB_CONFIG)
     database_cursor = database_connection.cursor()
 

@@ -1,4 +1,4 @@
-# Форма товара: загрузка по id, сохранение (добавление/редактирование), списки категорий и производителей.
+# Логика формы товара: загрузка по id, сохранение (добавление/редактирование), списки категорий и производителей.
 import os
 import sys
 
@@ -17,26 +17,22 @@ from App.utils import ROOT
 
 
 def get_category_names():
-    """Список категорий для выпадающего списка."""
+    """Возвращает список категорий для выпадающего списка в форме товара."""
     return _get_category_names()
 
 
 def get_manufacturer_names():
-    """Список производителей для выпадающего списка."""
+    """Возвращает список производителей для выпадающего списка в форме товара."""
     return _get_manufacturer_names()
 
 
 def load_product(product_id):
-    """Загрузить товар по id. Возвращает словарь или None."""
+    """Загружает один товар по id из БД. Возвращает словарь или None."""
     return _get_product_by_id(product_id)
 
 
 def save_product(product_id, data, old_photo_path=None):
-    """
-    Сохранить товар. product_id=None — добавление, иначе обновление.
-    data — словарь полей (article, product_name, category, ... photo).
-    old_photo_path — при обновлении старый путь фото; если он задан и заменён новым, файл удаляется.
-    """
+    """Сохраняет товар: при product_id=None — добавление, иначе обновление. data — словарь полей. old_photo_path — старый путь фото при редактировании (при смене фото файл удаляется)."""
     if old_photo_path and old_photo_path != data.get("photo"):
         old_full = os.path.join(ROOT, old_photo_path)
         if os.path.isfile(old_full):

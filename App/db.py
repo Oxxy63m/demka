@@ -1,4 +1,4 @@
-# App/db.py — все функции работы с БД: авторизация, товары (список/по id), поставщики, проверка в заказах, вставка/обновление/удаление
+# Работа с базой данных: вход пользователя, товары, заказы, справочники.
 import os
 import sys
 
@@ -14,13 +14,14 @@ from App.config import DB_CONFIG
 
 
 def auth_user(login, password):
+    """Проверяет логин и пароль. Возвращает словарь пользователя (user_id, login, full_name, role) или None."""
     login = (login or "").strip()
     password = (password or "").strip()
     connection = psycopg2.connect(**DB_CONFIG)
     cursor = connection.cursor(cursor_factory=RealDictCursor)
     cursor.execute(
         "SELECT u.user_id, u.login, u.full_name, r.name AS role FROM users u "
-        "JOIN roles r ON u.role_id = r.role_id WHERE TRIM(u.login) = %s AND TRIM(u.password_hash) = %s",
+        "JOIN roles r ON u.role_id = r.role_id WHERE TRIM(u.login) = %s AND TRIM(u.user_password) = %s",
         (login, password),
     )
     user_row = cursor.fetchone()
@@ -32,94 +33,143 @@ def auth_user(login, password):
 
 
 def get_products_all(search_text="", supplier_name=None, order_by_quantity=None):
-    connection = psycopg2.connect(**DB_CONFIG)
-    cursor = connection.cursor(cursor_factory=RealDictCursor)
-    query = (
-        "SELECT p.id, p.article, p.product_name, c.name AS category, p.description, m.name AS manufacturer, "
-        "s.name AS supplier, p.price, u.code AS unit, p.stock_quantity, p.discount, p.photo "
-        "FROM products p "
-        "LEFT JOIN categories c ON p.category_id = c.category_id "
-        "LEFT JOIN manufacturers m ON p.manufacturer_id = m.manufacturer_id "
-        "LEFT JOIN suppliers s ON p.supplier_id = s.supplier_id "
-        "LEFT JOIN units u ON p.unit_id = u.unit_id WHERE 1=1"
-    )
-    query_params = []
-    if search_text and search_text.strip():
-        search_pattern = "%" + search_text.strip() + "%"
-        query += " AND (p.article ILIKE %s OR p.product_name ILIKE %s OR p.description ILIKE %s OR c.name ILIKE %s OR m.name ILIKE %s OR s.name ILIKE %s OR u.code ILIKE %s)"
-        query_params = [search_pattern, search_pattern, search_pattern, search_pattern, search_pattern, search_pattern, search_pattern]
-    if supplier_name:
-        query += " AND s.name = %s"
-        query_params.append(supplier_name)
-    if order_by_quantity == "asc":
-        query += " ORDER BY p.stock_quantity ASC"
-    elif order_by_quantity == "desc":
-        query += " ORDER BY p.stock_quantity DESC"
-    else:
-        query += " ORDER BY p.id"
-    cursor.execute(query, query_params)
-    result_rows = cursor.fetchall()
-    cursor.close()
-    connection.close()
-    return result_rows
+    """Список товаров с фильтром по поиску, поставщику и сортировке по количеству."""
+    conn = psycopg2.connect(**DB_CONFIG)
+    cur = conn.cursor(cursor_factory=RealDictCursor)
+    try:
+        query = (
+            "SELECT p.id, p.article, p.product_name, c.name AS category, p.description, m.name AS manufacturer, "
+            "s.name AS supplier, p.price, u.code AS unit, p.stock_quantity, p.discount, p.photo "
+            "FROM products p "
+            "LEFT JOIN categories c ON p.category_id = c.category_id "
+            "LEFT JOIN manufacturers m ON p.manufacturer_id = m.manufacturer_id "
+            "LEFT JOIN suppliers s ON p.supplier_id = s.supplier_id "
+            "LEFT JOIN units u ON p.unit_id = u.unit_id WHERE 1=1"
+        )
+        params = []
+        if search_text and search_text.strip():
+            q = "%" + search_text.strip() + "%"
+            query += " AND (p.article ILIKE %s OR p.product_name ILIKE %s OR p.description ILIKE %s OR c.name ILIKE %s OR m.name ILIKE %s OR s.name ILIKE %s OR u.code ILIKE %s)"
+            params = [q] * 7
+        if supplier_name:
+            query += " AND s.name = %s"
+            params.append(supplier_name)
+        if order_by_quantity == "asc":
+            query += " ORDER BY p.stock_quantity ASC"
+        elif order_by_quantity == "desc":
+            query += " ORDER BY p.stock_quantity DESC"
+        else:
+            query += " ORDER BY p.id"
+        cur.execute(query, params)
+        rows = cur.fetchall()
+    except Exception:
+        # Старая схема: в products колонки unit, supplier, manufacturer, category (без справочников)
+        query = "SELECT id, article, product_name, category, description, manufacturer, supplier, price, unit, stock_quantity, discount, photo FROM products WHERE 1=1"
+        params = []
+        if search_text and search_text.strip():
+            q = "%" + search_text.strip() + "%"
+            query += " AND (article ILIKE %s OR product_name ILIKE %s OR COALESCE(description,'')::text ILIKE %s OR COALESCE(category,'') ILIKE %s OR COALESCE(manufacturer,'') ILIKE %s OR COALESCE(supplier,'') ILIKE %s OR COALESCE(unit,'') ILIKE %s)"
+            params = [q] * 7
+        if supplier_name:
+            query += " AND supplier = %s"
+            params.append(supplier_name)
+        if order_by_quantity == "asc":
+            query += " ORDER BY stock_quantity ASC"
+        elif order_by_quantity == "desc":
+            query += " ORDER BY stock_quantity DESC"
+        else:
+            query += " ORDER BY id"
+        cur.execute(query, params)
+        rows = cur.fetchall()
+    cur.close()
+    conn.close()
+    return rows
 
 
 def get_product_by_id(product_id):
-    connection = psycopg2.connect(**DB_CONFIG)
-    cursor = connection.cursor(cursor_factory=RealDictCursor)
-    cursor.execute(
-        "SELECT p.id, p.article, p.product_name, c.name AS category, p.description, m.name AS manufacturer, "
-        "s.name AS supplier, p.price, u.code AS unit, p.stock_quantity, p.discount, p.photo "
-        "FROM products p LEFT JOIN categories c ON p.category_id = c.category_id "
-        "LEFT JOIN manufacturers m ON p.manufacturer_id = m.manufacturer_id "
-        "LEFT JOIN suppliers s ON p.supplier_id = s.supplier_id "
-        "LEFT JOIN units u ON p.unit_id = u.unit_id WHERE p.id = %s",
-        (product_id,),
-    )
-    product_row = cursor.fetchone()
-    cursor.close()
-    connection.close()
-    return product_row
+    """Один товар по id. Возвращает словарь или None."""
+    conn = psycopg2.connect(**DB_CONFIG)
+    cur = conn.cursor(cursor_factory=RealDictCursor)
+    try:
+        cur.execute(
+            "SELECT p.id, p.article, p.product_name, c.name AS category, p.description, m.name AS manufacturer, "
+            "s.name AS supplier, p.price, u.code AS unit, p.stock_quantity, p.discount, p.photo "
+            "FROM products p LEFT JOIN categories c ON p.category_id = c.category_id "
+            "LEFT JOIN manufacturers m ON p.manufacturer_id = m.manufacturer_id "
+            "LEFT JOIN suppliers s ON p.supplier_id = s.supplier_id "
+            "LEFT JOIN units u ON p.unit_id = u.unit_id WHERE p.id = %s",
+            (product_id,),
+        )
+        row = cur.fetchone()
+    except Exception:
+        cur.execute(
+            "SELECT id, article, product_name, category, description, manufacturer, supplier, price, unit, stock_quantity, discount, photo FROM products WHERE id = %s",
+            (product_id,),
+        )
+        row = cur.fetchone()
+    cur.close()
+    conn.close()
+    return row
 
 
 def get_supplier_names():
-    connection = psycopg2.connect(**DB_CONFIG)
-    cursor = connection.cursor()
-    cursor.execute("SELECT name FROM suppliers ORDER BY name")
-    result_rows = cursor.fetchall()
-    cursor.close()
-    connection.close()
-    return [r[0] for r in result_rows]
+    """Список названий поставщиков для фильтра."""
+    conn = psycopg2.connect(**DB_CONFIG)
+    cur = conn.cursor()
+    try:
+        cur.execute("SELECT name FROM suppliers ORDER BY name")
+        out = [r[0] for r in cur.fetchall()]
+    except Exception:
+        cur.execute("SELECT DISTINCT supplier FROM products WHERE supplier IS NOT NULL AND supplier != '' ORDER BY supplier")
+        out = [r[0] for r in cur.fetchall()]
+    cur.close()
+    conn.close()
+    return out
 
 
 def get_category_names():
-    connection = psycopg2.connect(**DB_CONFIG)
-    cursor = connection.cursor()
-    cursor.execute("SELECT name FROM categories ORDER BY name")
-    result_rows = cursor.fetchall()
-    cursor.close()
-    connection.close()
-    return [r[0] for r in result_rows]
+    """Список категорий для формы товара."""
+    conn = psycopg2.connect(**DB_CONFIG)
+    cur = conn.cursor()
+    try:
+        cur.execute("SELECT name FROM categories ORDER BY name")
+        out = [r[0] for r in cur.fetchall()]
+    except Exception:
+        cur.execute("SELECT DISTINCT category FROM products WHERE category IS NOT NULL AND category != '' ORDER BY category")
+        out = [r[0] for r in cur.fetchall()]
+    cur.close()
+    conn.close()
+    return out
 
 
 def get_manufacturer_names():
-    connection = psycopg2.connect(**DB_CONFIG)
-    cursor = connection.cursor()
-    cursor.execute("SELECT name FROM manufacturers ORDER BY name")
-    result_rows = cursor.fetchall()
-    cursor.close()
-    connection.close()
-    return [r[0] for r in result_rows]
+    """Список производителей для формы товара."""
+    conn = psycopg2.connect(**DB_CONFIG)
+    cur = conn.cursor()
+    try:
+        cur.execute("SELECT name FROM manufacturers ORDER BY name")
+        out = [r[0] for r in cur.fetchall()]
+    except Exception:
+        cur.execute("SELECT DISTINCT manufacturer FROM products WHERE manufacturer IS NOT NULL AND manufacturer != '' ORDER BY manufacturer")
+        out = [r[0] for r in cur.fetchall()]
+    cur.close()
+    conn.close()
+    return out
 
 
 def get_unit_names():
-    connection = psycopg2.connect(**DB_CONFIG)
-    cursor = connection.cursor()
-    cursor.execute("SELECT code FROM units ORDER BY code")
-    result_rows = cursor.fetchall()
-    cursor.close()
-    connection.close()
-    return [r[0] for r in result_rows]
+    """Список единиц измерения для формы товара."""
+    conn = psycopg2.connect(**DB_CONFIG)
+    cur = conn.cursor()
+    try:
+        cur.execute("SELECT code FROM units ORDER BY code")
+        out = [r[0] for r in cur.fetchall()]
+    except Exception:
+        cur.execute("SELECT DISTINCT unit FROM products WHERE unit IS NOT NULL AND unit != '' ORDER BY unit")
+        out = [r[0] for r in cur.fetchall()]
+    cur.close()
+    conn.close()
+    return out
 
 
 def _get_or_create_supplier_id(cursor, name):
@@ -171,6 +221,7 @@ def _get_or_create_unit_id(cursor, code_or_name):
 
 
 def product_in_orders(product_id):
+    """Есть ли товар хотя бы в одном заказе (нельзя удалить)."""
     connection = psycopg2.connect(**DB_CONFIG)
     cursor = connection.cursor()
     cursor.execute("SELECT 1 FROM order_items WHERE product_id = %s LIMIT 1", (product_id,))
@@ -181,6 +232,7 @@ def product_in_orders(product_id):
 
 
 def insert_product(data):
+    """Добавляет товар. data: article, product_name, unit, price, supplier, manufacturer, category, discount, stock_quantity, description, photo. Возвращает id."""
     connection = psycopg2.connect(**DB_CONFIG)
     cursor = connection.cursor()
     supplier_id = _get_or_create_supplier_id(cursor, data.get("supplier"))
@@ -217,6 +269,7 @@ def insert_product(data):
 
 
 def update_product(product_id, data):
+    """Обновляет товар по id. data — те же поля, что у insert_product."""
     connection = psycopg2.connect(**DB_CONFIG)
     cursor = connection.cursor()
     supplier_id = _get_or_create_supplier_id(cursor, data.get("supplier"))
@@ -250,6 +303,7 @@ def update_product(product_id, data):
 
 
 def delete_product(product_id):
+    """Удаляет товар по id."""
     connection = psycopg2.connect(**DB_CONFIG)
     cursor = connection.cursor()
     cursor.execute("DELETE FROM products WHERE id = %s", (product_id,))
@@ -258,27 +312,7 @@ def delete_product(product_id):
     connection.close()
 
 
-# --- Заказы (Модуль 4) ---
-
-_orders_schema_checked = False
-
-
-def _ensure_order_article_column():
-    """Добавить столбец order_article в таблицу orders, если его нет (для БД, созданных по старой схеме)."""
-    global _orders_schema_checked
-    if _orders_schema_checked:
-        return
-    try:
-        connection = psycopg2.connect(**DB_CONFIG)
-        cursor = connection.cursor()
-        cursor.execute("ALTER TABLE orders ADD COLUMN IF NOT EXISTS order_article VARCHAR(50);")
-        connection.commit()
-        cursor.close()
-        connection.close()
-    except Exception:
-        pass
-    _orders_schema_checked = True
-
+# --- Заказы ---
 
 def _get_or_create_status_id(cursor, name):
     if not name or not str(name).strip():
@@ -307,38 +341,59 @@ def _get_or_create_pickup_point_id(cursor, address):
 
 
 def get_orders_all():
-    _ensure_order_article_column()
-    connection = psycopg2.connect(**DB_CONFIG)
-    cursor = connection.cursor(cursor_factory=RealDictCursor)
-    cursor.execute(
-        "SELECT o.order_id AS id, o.order_article, o.order_date, o.delivery_date, pp.address AS pickup_point, "
-        "st.name AS status, o.user_id, u.full_name AS user_name "
-        "FROM orders o JOIN users u ON o.user_id = u.user_id "
-        "LEFT JOIN order_statuses st ON o.status_id = st.status_id "
-        "LEFT JOIN pickup_points pp ON o.pickup_point_id = pp.pickup_point_id "
-        "ORDER BY o.order_date DESC, o.order_id DESC"
-    )
-    result_rows = cursor.fetchall()
-    cursor.close()
-    connection.close()
-    return result_rows
+    """Возвращает список всех заказов (словари с id, order_date, pickup_point, status, user_name и т.д.)."""
+    conn = psycopg2.connect(**DB_CONFIG)
+    cur = conn.cursor(cursor_factory=RealDictCursor)
+    try:
+        cur.execute(
+            "SELECT o.order_id AS id, o.order_date, o.delivery_date, pp.address AS pickup_point, "
+            "st.name AS status, o.user_id, u.full_name AS user_name "
+            "FROM orders o JOIN users u ON o.user_id = u.user_id "
+            "LEFT JOIN order_statuses st ON o.status_id = st.status_id "
+            "LEFT JOIN pickup_points pp ON o.pickup_point_id = pp.pickup_point_id "
+            "ORDER BY o.order_date DESC, o.order_id DESC"
+        )
+        rows = cur.fetchall()
+        for r in rows:
+            r["order_article"] = ""
+    except Exception:
+        cur.execute(
+            "SELECT o.order_id AS id, o.order_date, o.delivery_date, o.pickup_point, o.status, o.user_id, u.full_name AS user_name "
+            "FROM orders o JOIN users u ON o.user_id = u.user_id ORDER BY o.order_date DESC, o.order_id DESC"
+        )
+        rows = cur.fetchall()
+        for r in rows:
+            r["order_article"] = r.get("order_article") or ""
+    cur.close()
+    conn.close()
+    return rows
 
 
 def get_order_by_id(order_id):
-    _ensure_order_article_column()
-    connection = psycopg2.connect(**DB_CONFIG)
-    cursor = connection.cursor(cursor_factory=RealDictCursor)
-    cursor.execute(
-        "SELECT o.order_id AS id, o.order_article, o.order_date, o.delivery_date, pp.address AS pickup_point, "
-        "st.name AS status, o.user_id FROM orders o "
-        "LEFT JOIN order_statuses st ON o.status_id = st.status_id "
-        "LEFT JOIN pickup_points pp ON o.pickup_point_id = pp.pickup_point_id WHERE o.order_id = %s",
-        (order_id,),
-    )
-    order_row = cursor.fetchone()
-    cursor.close()
-    connection.close()
-    return order_row
+    """Возвращает один заказ по id (словарь) или None."""
+    conn = psycopg2.connect(**DB_CONFIG)
+    cur = conn.cursor(cursor_factory=RealDictCursor)
+    try:
+        cur.execute(
+            "SELECT o.order_id AS id, o.order_date, o.delivery_date, pp.address AS pickup_point, st.name AS status, o.user_id "
+            "FROM orders o LEFT JOIN order_statuses st ON o.status_id = st.status_id "
+            "LEFT JOIN pickup_points pp ON o.pickup_point_id = pp.pickup_point_id WHERE o.order_id = %s",
+            (order_id,),
+        )
+        row = cur.fetchone()
+        if row:
+            row["order_article"] = ""
+    except Exception:
+        cur.execute(
+            "SELECT order_id AS id, order_date, delivery_date, pickup_point, status, user_id FROM orders WHERE order_id = %s",
+            (order_id,),
+        )
+        row = cur.fetchone()
+        if row:
+            row["order_article"] = row.get("order_article") or ""
+    cur.close()
+    conn.close()
+    return row
 
 
 def get_users_list():
@@ -353,19 +408,20 @@ def get_users_list():
 
 
 def insert_order(data):
+    """Добавляет заказ в БД. data: order_date, delivery_date, pickup_point, user_id, status, pickup_code (необяз.). Возвращает order_id."""
     connection = psycopg2.connect(**DB_CONFIG)
     cursor = connection.cursor()
     status_id = _get_or_create_status_id(cursor, data.get("status"))
     pickup_point_id = _get_or_create_pickup_point_id(cursor, data.get("pickup_point"))
     cursor.execute(
-        "INSERT INTO orders (order_article, order_date, delivery_date, pickup_point_id, user_id, status_id) "
+        "INSERT INTO orders (order_date, delivery_date, pickup_point_id, user_id, pickup_code, status_id) "
         "VALUES (%s, %s, %s, %s, %s, %s) RETURNING order_id",
         (
-            data.get("order_article"),
             data.get("order_date"),
             data.get("delivery_date"),
             pickup_point_id,
             data.get("user_id"),
+            data.get("pickup_code"),
             status_id,
         ),
     )
@@ -377,14 +433,14 @@ def insert_order(data):
 
 
 def update_order(order_id, data):
+    """Обновляет заказ по id. data: order_date, delivery_date, pickup_point, user_id, status."""
     connection = psycopg2.connect(**DB_CONFIG)
     cursor = connection.cursor()
     status_id = _get_or_create_status_id(cursor, data.get("status"))
     pickup_point_id = _get_or_create_pickup_point_id(cursor, data.get("pickup_point"))
     cursor.execute(
-        "UPDATE orders SET order_article=%s, order_date=%s, delivery_date=%s, pickup_point_id=%s, user_id=%s, status_id=%s WHERE order_id=%s",
+        "UPDATE orders SET order_date=%s, delivery_date=%s, pickup_point_id=%s, user_id=%s, status_id=%s WHERE order_id=%s",
         (
-            data.get("order_article"),
             data.get("order_date"),
             data.get("delivery_date"),
             pickup_point_id,
@@ -399,6 +455,7 @@ def update_order(order_id, data):
 
 
 def delete_order(order_id):
+    """Удаляет заказ по id."""
     connection = psycopg2.connect(**DB_CONFIG)
     cursor = connection.cursor()
     cursor.execute("DELETE FROM orders WHERE order_id = %s", (order_id,))
@@ -472,6 +529,14 @@ def get_or_create_category_id_conn(connection, name):
         cursor.close()
 
 
+def get_or_create_unit_id_conn(connection, code_or_name):
+    cursor = connection.cursor()
+    try:
+        return _get_or_create_unit_id(cursor, code_or_name)
+    finally:
+        cursor.close()
+
+
 def get_or_create_pickup_point_id_conn(connection, address):
     cursor = connection.cursor()
     try:
@@ -489,15 +554,16 @@ def get_or_create_status_id_conn(connection, name):
 
 
 def insert_order_items(order_id, items):
-    """items: список словарей с ключами product_id, quantity."""
+    """Добавляет позиции заказа. items: список словарей с ключами product_id, quantity, unit_price (цена за единицу)."""
     if not items:
         return
     connection = psycopg2.connect(**DB_CONFIG)
     cursor = connection.cursor()
     for it in items:
+        unit_price = float(it.get("unit_price", 0))
         cursor.execute(
-            "INSERT INTO order_items (order_id, product_id, quantity) VALUES (%s, %s, %s)",
-            (order_id, it["product_id"], it["quantity"]),
+            "INSERT INTO order_items (order_id, product_id, quantity, unit_price) VALUES (%s, %s, %s, %s)",
+            (order_id, it["product_id"], it["quantity"], unit_price),
         )
     connection.commit()
     cursor.close()

@@ -1,4 +1,4 @@
-# Настройки: пути и БД. Менять DATA_DIR и DB_CONFIG под свою машину.
+# Настройки приложения: папки с данными, пути к интерфейсам, параметры БД. Менять DATA_DIR и DB_CONFIG под свой компьютер.
 import os
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))

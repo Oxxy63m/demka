@@ -1,4 +1,4 @@
-# Запуск: python main.py. Сначала один раз: python create_db.py
+# Точка входа приложения. Запуск: python main.py (сначала один раз: python create_db.py)
 import os
 import sys
 from PySide6.QtWidgets import QApplication
@@ -14,6 +14,7 @@ BTN_H = 42
 
 
 def main():
+    """Создаёт плейсхолдер для фото при необходимости, запускает окно входа и главное окно каталога."""
     res_dir = os.path.join(ROOT, "resources")
     ph_path = os.path.join(res_dir, PLACEHOLDER_IMAGE)
     if not os.path.isfile(ph_path):

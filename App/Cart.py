@@ -1,4 +1,4 @@
-# App/Cart.py — оформление заказа (корзина), разметка из UI/cart.ui
+# Диалог оформления заказа (корзина): таблица товаров, пункт выдачи, дата доставки, кнопки «Оформить» и «Отмена». Разметка — ui/cart.ui.
 from datetime import date
 from PySide6.QtWidgets import QDialog, QMessageBox, QTableWidgetItem, QAbstractItemView
 from PySide6.QtCore import Qt
@@ -31,6 +31,7 @@ class Cart(BaseCart, Ui_Cart):
         self.btn_confirm.clicked.connect(self._confirm_order)
 
     def _fill_table(self):
+        """Заполняет таблицу товаров в корзине: название, количество, цена, сумма."""
         self.table_items.setRowCount(len(self.cart_items))
         for row, it in enumerate(self.cart_items):
             self.table_items.setItem(row, 0, QTableWidgetItem(it.get("product_name", "")))
@@ -42,6 +43,7 @@ class Cart(BaseCart, Ui_Cart):
             self.table_items.item(row, 0).setData(Qt.ItemDataRole.UserRole, row)
 
     def _update_total(self):
+        """Пересчитывает и показывает итоговую сумму заказа."""
         total = sum(
             float(it.get("price", 0)) * int(it.get("quantity", 0))
             for it in self.cart_items
@@ -49,6 +51,7 @@ class Cart(BaseCart, Ui_Cart):
         self.lbl_total.setText(f"{total:.2f} ₽")
 
     def _remove_selected(self):
+        """Удаляет выбранную строку из таблицы и из списка товаров корзины."""
         row = self.table_items.currentRow()
         if row < 0 or row >= len(self.cart_items):
             return
@@ -57,6 +60,7 @@ class Cart(BaseCart, Ui_Cart):
         self._update_total()
 
     def _confirm_order(self):
+        """Создаёт заказ в БД (таблица orders и order_items), показывает сообщение об успехе и закрывает диалог."""
         if not self.cart_items:
             QMessageBox.warning(self, "Внимание", "Корзина пуста.")
             return
@@ -65,7 +69,10 @@ class Cart(BaseCart, Ui_Cart):
             QMessageBox.warning(self, "Ошибка", "Не указан пользователь для заказа.")
             return
         try:
-            items = [{"product_id": it["product_id"], "quantity": int(it.get("quantity", 1))} for it in self.cart_items]
+            items = [
+                {"product_id": it["product_id"], "quantity": int(it.get("quantity", 1)), "unit_price": float(it.get("price", 0))}
+                for it in self.cart_items
+            ]
             product_ids = [it["product_id"] for it in items]
             articles_map = get_product_articles(product_ids)
             parts = [

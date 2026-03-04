@@ -1,4 +1,4 @@
-# App/Main.py — главное окно (каталог товаров), разметка из UI/main.ui
+# Главное окно приложения: каталог товаров, фильтры, корзина, кнопки «Заказы» и «Добавить». Разметка — ui/main.ui.
 from PySide6.QtWidgets import QMainWindow, QMessageBox, QSizePolicy, QDialog, QPushButton
 from PySide6.QtCore import Qt
 from PySide6.QtUiTools import loadUiType
@@ -53,6 +53,7 @@ class Main(BaseMain, Ui_Main):
         self._refresh_product_list()
 
     def _refresh_product_list(self):
+        """Загружает список товаров из БД по фильтрам и заполняет каталог карточками."""
         search_text = self.search_edit.text() if self.search_edit.isVisible() else ""
         supplier_filter = self.supplier_combo.currentData()
         sort_by_quantity = self.sort_combo.currentData()
@@ -77,6 +78,7 @@ class Main(BaseMain, Ui_Main):
             self.cards_layout.addWidget(card)
 
     def _open_orders(self):
+        """Открывает окно со списком заказов."""
         from App.Orders import Orders
         # Ссылку храним в self, иначе окно уничтожается сборщиком мусора и сразу закрывается
         self._orders_window = Orders(self.user, parent=None)
@@ -84,12 +86,14 @@ class Main(BaseMain, Ui_Main):
         self._orders_window.showMaximized()
 
     def _open_cart(self):
+        """Открывает диалог корзины; после подтверждения заказа корзина очищается."""
         from App.Cart import Cart
         cart_dialog = Cart(self.user, self.cart, self)
         if cart_dialog.exec() == QDialog.DialogCode.Accepted:
             self.cart.clear()
 
     def _add_to_cart(self, item):
+        """Добавляет товар в корзину или увеличивает количество, если уже есть."""
         for it in self.cart:
             if it.get("product_id") == item.get("product_id"):
                 it["quantity"] = it.get("quantity", 0) + item.get("quantity", 1)
@@ -97,6 +101,7 @@ class Main(BaseMain, Ui_Main):
         self.cart.append({"product_id": item["product_id"], "product_name": item["product_name"], "price": item["price"], "quantity": item.get("quantity", 1)})
 
     def _open_product_edit_form(self, product_id):
+        """Открывает форму добавления или редактирования товара (product_id=None — новый товар)."""
         if self.edit_open:
             QMessageBox.warning(self, "Предупреждение", "Закройте окно редактирования.")
             return
@@ -109,9 +114,11 @@ class Main(BaseMain, Ui_Main):
         product_form_window.show()
 
     def _on_add(self):
+        """Кнопка «Добавить»: открывает форму нового товара."""
         self._open_product_edit_form(None)
 
     def _on_delete_product_card(self, product_id):
+        """Удаляет товар из БД после подтверждения; если товар в заказе — отказ."""
         if product_in_orders(product_id):
             QMessageBox.warning(self, "Ошибка", "Товар в заказе, удалить нельзя.")
             return

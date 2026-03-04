@@ -1,4 +1,4 @@
-# App/OrderForm.py — форма заказа, разметка из UI/order_form.ui
+# Форма добавления и редактирования заказа: даты, пункт выдачи, статус, клиент. Разметка — ui/order_form.ui.
 from datetime import date
 from PySide6.QtWidgets import QDialog, QMessageBox
 from PySide6.QtCore import Signal, QDate
@@ -75,6 +75,7 @@ class OrderForm(BaseOrderForm, Ui_OrderForm):
             self.user_combo.setCurrentIndex(user_index)
 
     def _save(self):
+        """Проверяет выбор клиента и сохраняет заказ в БД (добавление или обновление), затем закрывает форму."""
         user_id = self.user_combo.currentData()
         if user_id is None and self.user_combo.count():
             user_id = self.user_combo.itemData(0)

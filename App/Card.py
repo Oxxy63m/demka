@@ -1,4 +1,4 @@
-# App/Card.py — карточка товара
+# Карточка одного товара в каталоге: фото, описание, цена, скидка, кнопки «В заказ» и «Удалить». Разметка — ui/product_item.ui.
 import os
 from PySide6.QtWidgets import QFrame, QMenu
 from PySide6.QtCore import Qt, Signal
@@ -11,7 +11,7 @@ Ui_Card, BaseCard = loadUiType(UI["card"])
 
 
 def _resolve_product_photo_path(photo_filename):
-    """Ищем файл фото в PHOTOS_DIR (папка import), потом в resources."""
+    """Ищет файл фото: сначала в папке с данными (PHOTOS_DIR), затем в resources."""
     if not photo_filename:
         return None
     photo_filename = os.path.basename(str(photo_filename).strip())
@@ -32,7 +32,7 @@ def _resolve_product_photo_path(photo_filename):
 
 
 def _load_product_photo_pixmap(image_path, width=IMAGE_MAX_WIDTH, height=IMAGE_MAX_HEIGHT):
-    # Сначала фото товара, затем плейсхолдер picture.png из папки import, потом из resources
+    """Загружает изображение товара или плейсхолдер picture.png и масштабирует под размер карточки."""
     full_path = _resolve_product_photo_path(image_path) or _resolve_product_photo_path(PLACEHOLDER_IMAGE) or os.path.normpath(os.path.join(RESOURCES_DIR, PLACEHOLDER_IMAGE))
     pixmap = QPixmap(full_path)
     if pixmap.isNull():
@@ -77,6 +77,7 @@ class Card(BaseCard, Ui_Card):
                 self.btn_order.clicked.connect(self._emit_add_to_cart)
 
     def _fill_card(self):
+        """Заполняет поля карточки: название, описание, цена, скидка, фото и т.д."""
         for label_widget in (
             self.lbl_header, self.lbl_desc_title, self.lbl_desc,
             self.lbl_manufacturer, self.lbl_supplier, self.lbl_price,
@@ -111,6 +112,7 @@ class Card(BaseCard, Ui_Card):
         self.photo_label.setStyleSheet("background: #f0f0f0;")
 
     def _apply_highlight(self):
+        """Подсвечивает карточку: зелёная при скидке >15%, голубая при нулевом остатке."""
         discount_percent = float(self.product.get("discount") or 0)
         stock_quantity = int(self.product.get("stock_quantity") or 0)
         self.setFrameShape(QFrame.Shape.Box)
@@ -128,6 +130,7 @@ class Card(BaseCard, Ui_Card):
             self.setStyleSheet("QFrame#ProductCard { border: 1px solid #ccc; background-color: #fff; }")
 
     def _emit_add_to_cart(self):
+        """Отправляет сигнал add_to_cart с данными товара (id, название, цена со скидкой, количество 1)."""
         price = float(self.product.get("price") or 0)
         discount = float(self.product.get("discount") or 0)
         price_with_discount = price * (1 - discount / 100) if discount else price

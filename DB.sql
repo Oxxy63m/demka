@@ -1,7 +1,7 @@
 -- Схема БД в третьей нормальной форме (3НФ), исправленная по замечаниям
 -- Без order_article в orders (вычисляется из order_items + products)
 -- unit_price в order_items (историчность), UNIQUE(order_id, product_id)
--- units справочник, article NOT NULL UNIQUE, password_hash
+-- units справочник, article NOT NULL UNIQUE
 
 -- Справочники
 CREATE TABLE roles (
@@ -40,14 +40,13 @@ CREATE TABLE pickup_points (
     address VARCHAR(500) NOT NULL
 );
 
--- Пользователи (password_hash — для хранения хеша, не plain text)
+-- Пользователи
 CREATE TABLE users (
     user_id SERIAL PRIMARY KEY,
     full_name VARCHAR(255) NOT NULL,
     login VARCHAR(255) NOT NULL UNIQUE,
-    password_hash VARCHAR(255) NOT NULL,
-    role_id INTEGER NOT NULL REFERENCES roles(role_id) ON DELETE RESTRICT,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT now()
+    user_password VARCHAR(255) NOT NULL,
+    role_id INTEGER NOT NULL REFERENCES roles(role_id) ON DELETE RESTRICT
 );
 
 -- Товары: article уникален и NOT NULL, unit_id FK

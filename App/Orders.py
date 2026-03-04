@@ -1,4 +1,4 @@
-# App/Orders.py — окно списка заказов, разметка из UI/orders_list.ui
+# Окно списка заказов: таблица заказов, кнопки «Добавить», «Удалить», двойной клик — редактирование. Разметка — ui/orders_list.ui.
 from PySide6.QtWidgets import QMainWindow, QTableWidgetItem, QMessageBox, QHeaderView, QAbstractItemView, QSizePolicy
 from PySide6.QtCore import Qt
 from PySide6.QtUiTools import loadUiType
@@ -35,6 +35,7 @@ class Orders(BaseOrders, Ui_Orders):
         self._refresh_orders_table()
 
     def _refresh_orders_table(self):
+        """Загружает заказы из БД и заполняет таблицу."""
         try:
             orders_list = load_orders()
         except Exception as load_error:
@@ -51,6 +52,7 @@ class Orders(BaseOrders, Ui_Orders):
             self.table.item(row_index, 0).setData(Qt.ItemDataRole.UserRole, order.get("id"))
 
     def _get_selected_order_id(self):
+        """Возвращает id выбранного в таблице заказа или None."""
         current_row = self.table.currentRow()
         if current_row < 0:
             return None
@@ -58,6 +60,7 @@ class Orders(BaseOrders, Ui_Orders):
         return first_column_item.data(Qt.ItemDataRole.UserRole) if first_column_item else None
 
     def _open_order_edit_form(self, order_id):
+        """Открывает форму редактирования или добавления заказа (order_id=None — новый заказ)."""
         if self.edit_open:
             QMessageBox.warning(self, "Предупреждение", "Закройте окно редактирования заказа.")
             return
@@ -70,9 +73,11 @@ class Orders(BaseOrders, Ui_Orders):
         order_form_window.show()
 
     def _on_add(self):
+        """Кнопка «Добавить»: открывает форму нового заказа."""
         self._open_order_edit_form(None)
 
     def _on_cell_double_clicked(self, row_index, column_index):
+        """По двойному клику по строке открывает форму редактирования этого заказа."""
         first_column_item = self.table.item(row_index, 0)
         if first_column_item:
             selected_order_id = first_column_item.data(Qt.ItemDataRole.UserRole)
@@ -80,6 +85,7 @@ class Orders(BaseOrders, Ui_Orders):
                 self._open_order_edit_form(selected_order_id)
 
     def _on_delete(self):
+        """Удаляет выбранный заказ после подтверждения."""
         selected_order_id = self._get_selected_order_id()
         if not selected_order_id:
             QMessageBox.warning(self, "Ошибка", "Выберите заказ.")

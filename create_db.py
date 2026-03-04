@@ -1,6 +1,7 @@
-# Создание БД: python create_db.py (один раз)
+# Создание базы данных и таблиц. Запуск: python create_db.py (один раз в начале).
 import os
 import sys
+
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import psycopg2
 from App.config import DB_CONFIG
@@ -9,6 +10,7 @@ NAME = "demka"
 
 
 def main():
+    """Создаёт базу demka, если её нет, и выполняет скрипт DB.sql (создание таблиц)."""
     conn = psycopg2.connect(host=DB_CONFIG["host"], port=DB_CONFIG["port"], database="postgres",
                             user=DB_CONFIG["user"], password=DB_CONFIG["password"])
     conn.autocommit = True
