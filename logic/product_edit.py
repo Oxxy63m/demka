@@ -13,7 +13,7 @@ from App.db import (
     insert_product as _insert_product,
     update_product as _update_product,
 )
-from App.utils import ROOT
+from App.config import ROOT
 
 
 def get_category_names():

@@ -5,7 +5,7 @@ from PySide6.QtCore import Qt, Signal
 from PySide6.QtGui import QPixmap, QImage
 from PySide6.QtUiTools import loadUiType
 
-from App.config import UI, ROOT, RESOURCES_DIR, IMAGES_FOLDER, IMAGE_MAX_WIDTH, IMAGE_MAX_HEIGHT, PLACEHOLDER_IMAGE
+from App.config import UI, ROOT, DATA_DIR, IMAGES_FOLDER, IMAGE_MAX_WIDTH, IMAGE_MAX_HEIGHT, PLACEHOLDER_IMAGE
 from App.Card import _resolve_product_photo_path
 from logic.product_edit import (
     load_product as load_product_by_id,
@@ -19,7 +19,7 @@ Ui_ProdForm, BaseProdForm = loadUiType(UI["prod"])
 
 def _placeholder_pixmap():
     """Возвращает изображение-заглушку для поля фото (picture.png или серый прямоугольник)."""
-    path = _resolve_product_photo_path(PLACEHOLDER_IMAGE) or os.path.join(RESOURCES_DIR, PLACEHOLDER_IMAGE)
+    path = _resolve_product_photo_path(PLACEHOLDER_IMAGE) or os.path.join(DATA_DIR, PLACEHOLDER_IMAGE)
     if os.path.isfile(path):
         pixmap = QPixmap(path)
         if not pixmap.isNull():

@@ -5,17 +5,17 @@ from PySide6.QtCore import Qt, Signal
 from PySide6.QtGui import QPixmap, QImage, QColor, QAction
 from PySide6.QtUiTools import loadUiType
 
-from App.config import UI, PLACEHOLDER_IMAGE, IMAGE_MAX_WIDTH, IMAGE_MAX_HEIGHT, PHOTOS_DIR, RESOURCES_DIR
+from App.config import UI, PLACEHOLDER_IMAGE, IMAGE_MAX_WIDTH, IMAGE_MAX_HEIGHT, DATA_DIR
 
 Ui_Card, BaseCard = loadUiType(UI["card"])
 
 
 def _resolve_product_photo_path(photo_filename):
-    """Ищет файл фото: сначала в папке с данными (PHOTOS_DIR), затем в resources."""
+    """Ищет файл фото в папке DATA_DIR (resources)."""
     if not photo_filename:
         return None
     photo_filename = os.path.basename(str(photo_filename).strip())
-    for folder in (PHOTOS_DIR, RESOURCES_DIR):
+    for folder in (DATA_DIR,):
         folder = os.path.normpath(os.path.abspath(folder))
         if not os.path.isdir(folder):
             continue
@@ -33,7 +33,7 @@ def _resolve_product_photo_path(photo_filename):
 
 def _load_product_photo_pixmap(image_path, width=IMAGE_MAX_WIDTH, height=IMAGE_MAX_HEIGHT):
     """Загружает изображение товара или плейсхолдер picture.png и масштабирует под размер карточки."""
-    full_path = _resolve_product_photo_path(image_path) or _resolve_product_photo_path(PLACEHOLDER_IMAGE) or os.path.normpath(os.path.join(RESOURCES_DIR, PLACEHOLDER_IMAGE))
+    full_path = _resolve_product_photo_path(image_path) or _resolve_product_photo_path(PLACEHOLDER_IMAGE) or os.path.normpath(os.path.join(DATA_DIR, PLACEHOLDER_IMAGE))
     pixmap = QPixmap(full_path)
     if pixmap.isNull():
         image = QImage(full_path)

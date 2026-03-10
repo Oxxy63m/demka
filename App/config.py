@@ -1,9 +1,9 @@
-# Настройки приложения: папки с данными, пути к интерфейсам, параметры БД. Менять DATA_DIR и DB_CONFIG под свой компьютер.
+# Настройки приложения: папка ресурсов относительно проекта, пути к интерфейсам, параметры БД.
 import os
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-DATA_DIR = os.path.normpath(os.path.abspath(os.environ.get("DATA_DIR", r"C:\Users\user\Documents\fuckdemoexam\Модуль 1\import")))
-PHOTOS_DIR = DATA_DIR
+# Все ресурсы (иконки, плейсхолдер, фото товаров, Excel для импорта) — в папке resources в проекте.
+DATA_DIR = os.path.join(ROOT, "resources")
 APP_ICON = os.path.join(DATA_DIR, "icon.ico")
 LOGIN_LOGO = os.path.join(DATA_DIR, "icon.png")
 
@@ -25,7 +25,6 @@ DB_CONFIG = {
     "password": os.environ.get("DB_PASSWORD", "1234"),
 }
 
-RESOURCES_DIR = os.path.join(ROOT, "resources")
 IMAGES_FOLDER = "product_images"
 IMAGE_MAX_WIDTH = 300
 IMAGE_MAX_HEIGHT = 200
