@@ -1,5 +1,6 @@
 Импорт из Excel в БД:
-  Файлы в папку resources (или DATA_DIR в App/config.py).
-  Запуск: python import_to_db.py
-  Подробно: ИМПОРТ_ГАЙД.txt
-  Код скрипта: import_to_db.txt
+  Файлы кладём в папку resources (DATA_DIR в App/config.py).
+  Запуск импорта: python import_to_db.py
+  Код скрипта целиком: import_to_db.txt
+  Подробная инструкция по CSV/pgAdmin: импорт_через_CSV.txt
+
