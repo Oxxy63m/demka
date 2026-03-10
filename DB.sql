@@ -76,4 +76,3 @@ CREATE TABLE order_items (
 -- Начальные данные
 INSERT INTO roles (role_name) VALUES ('guest'), ('client'), ('manager'), ('administrator');
 INSERT INTO order_statuses (status_name) VALUES ('новый'), ('в обработке'), ('доставляется'), ('выполнен'), ('отменён');
-INSERT INTO units (unit_code, unit_name) VALUES ('шт', 'Штуки');
