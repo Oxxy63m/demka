@@ -1,43 +1,35 @@
 -- Схема БД в третьей нормальной форме (3НФ)
 -- Имена столбцов конкретные: role_name, category_name, supplier_name и т.д.
-
 -- Справочники
 CREATE TABLE roles (
     role_id SERIAL PRIMARY KEY,
     role_name VARCHAR(100) NOT NULL UNIQUE
 );
-
 CREATE TABLE suppliers (
     supplier_id SERIAL PRIMARY KEY,
     supplier_name VARCHAR(255) NOT NULL
 );
-
 CREATE TABLE manufacturers (
     manufacturer_id SERIAL PRIMARY KEY,
     manufacturer_name VARCHAR(255) NOT NULL
 );
-
 CREATE TABLE categories (
     category_id SERIAL PRIMARY KEY,
     category_name VARCHAR(255) NOT NULL
 );
-
 CREATE TABLE units (
     unit_id SERIAL PRIMARY KEY,
     unit_code VARCHAR(20) NOT NULL UNIQUE,
     unit_name VARCHAR(100) NOT NULL
 );
-
 CREATE TABLE order_statuses (
     status_id SERIAL PRIMARY KEY,
     status_name VARCHAR(100) NOT NULL UNIQUE
 );
-
 CREATE TABLE pickup_points (
     pickup_point_id SERIAL PRIMARY KEY,
     pickup_address VARCHAR(500) NOT NULL
 );
-
 -- Пользователи
 CREATE TABLE users (
     user_id SERIAL PRIMARY KEY,
@@ -46,7 +38,6 @@ CREATE TABLE users (
     user_password VARCHAR(255) NOT NULL,
     role_id INTEGER NOT NULL REFERENCES roles(role_id) ON DELETE RESTRICT
 );
-
 -- Товары
 CREATE TABLE products (
     id SERIAL PRIMARY KEY,
@@ -62,7 +53,6 @@ CREATE TABLE products (
     description TEXT,
     photo VARCHAR(255)
 );
-
 -- Заказы
 CREATE TABLE orders (
     order_id SERIAL PRIMARY KEY,
@@ -74,7 +64,6 @@ CREATE TABLE orders (
     status_id INTEGER REFERENCES order_statuses(status_id) ON DELETE SET NULL,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT now()
 );
-
 -- Позиции заказа
 CREATE TABLE order_items (
     order_item_id SERIAL PRIMARY KEY,
@@ -84,8 +73,7 @@ CREATE TABLE order_items (
     unit_price NUMERIC(10, 2) NOT NULL CHECK (unit_price >= 0),
     CONSTRAINT uq_order_product UNIQUE (order_id, product_id)
 );
-
 -- Начальные данные
 INSERT INTO roles (role_name) VALUES ('guest'), ('client'), ('manager'), ('administrator');
 INSERT INTO order_statuses (status_name) VALUES ('новый'), ('в обработке'), ('доставляется'), ('выполнен'), ('отменён');
-INSERT INTO units (unit_code, unit_name) VALUES ('шт', 'Штуки'), ('кг', 'Килограммы'), ('уп', 'Упаковка');
+INSERT INTO units (unit_code, unit_name) VALUES ('шт', 'Штуки');
