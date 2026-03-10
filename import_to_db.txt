@@ -1,0 +1,183 @@
+# Импорт из Excel в БД. Запуск: python import_to_db.py. Файлы в папке DATA_DIR (App/config.py).
+import os
+import sys
+
+import pandas as pd
+import psycopg2
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from App.config import DB_CONFIG, DATA_DIR
+from App.db import (
+    get_or_create_role_id,
+    get_or_create_supplier_id_conn,
+    get_or_create_manufacturer_id_conn,
+    get_or_create_category_id_conn,
+    get_or_create_unit_id_conn,
+    get_or_create_pickup_point_id_conn,
+    get_or_create_status_id_conn,
+)
+
+PATHS = {
+    "users": os.path.join(DATA_DIR, "user_import.xlsx"),
+    "products": os.path.join(DATA_DIR, "Tovar.xlsx"),
+    "orders": os.path.join(DATA_DIR, "Заказ_import.xlsx"),
+    "points": os.path.join(DATA_DIR, "Пункты выдачи_import.xlsx"),
+    "order_items": os.path.join(DATA_DIR, "order_items.xlsx"),
+}
+ROLE = {"администратор": "administrator", "менеджер": "manager", "клиент": "client"}
+
+
+def _num(x, default=0, kind=float):
+    if x is None or (hasattr(x, "__iter__") and pd.isna(x)):
+        return default
+    try:
+        return kind(float(x))
+    except (TypeError, ValueError):
+        return default
+
+
+def _str(x, default=""):
+    return str(x or default).strip() or default
+
+
+def load_pickup_addresses(path):
+    """Список адресов пунктов выдачи (первый столбец xlsx)."""
+    if not os.path.isfile(path):
+        return []
+    df = pd.read_excel(path, header=None)
+    out = [_str(df.iloc[i, 0]) for i in range(len(df)) if _str(df.iloc[i, 0])]
+    print(f"✅ Загружено пунктов выдачи: {len(out)}")
+    return out
+
+
+def import_users(conn, path):
+    df = pd.read_excel(path)
+    cur = conn.cursor()
+    for _, r in df.iterrows():
+        login = _str(r.get("Логин"))
+        if not login:
+            continue
+        role_name = ROLE.get(_str(r.get("Роль сотрудника", "клиент")).lower(), _str(r.get("Роль сотрудника", "клиент")))
+        role_id = get_or_create_role_id(conn, role_name)
+        if role_id is None:
+            continue
+        cur.execute(
+            "INSERT INTO users (full_name, login, user_password, role_id) VALUES (%s, %s, %s, %s) ON CONFLICT (login) DO NOTHING",
+            (_str(r.get("ФИО")), login, _str(r.get("Пароль")), role_id),
+        )
+    cur.close()
+    print(f"✅ Импортировано пользователей: {len(df)}")
+    return len(df)
+
+
+def import_products(conn, path):
+    df = pd.read_excel(path)
+    cur = conn.cursor()
+    for _, r in df.iterrows():
+        name = _str(r.get("Наименование товара"))
+        if not name:
+            continue
+        photo = _str(r.get("Фото")) or "picture.png"
+        price = _num(r.get("Цена"))
+        discount = _num(r.get("Действующая скидка"))
+        qty = _num(r.get("Кол-во на складе"), 0, int)
+        sid = get_or_create_supplier_id_conn(conn, r.get("Поставщик"))
+        mid = get_or_create_manufacturer_id_conn(conn, r.get("Производитель"))
+        cid = get_or_create_category_id_conn(conn, r.get("Категория товара"))
+        uid = get_or_create_unit_id_conn(conn, r.get("Единица измерения") or "шт.")
+        cur.execute(
+            "INSERT INTO products (article, product_name, unit_id, price, supplier_id, manufacturer_id, category_id, discount, stock_quantity, description, photo) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
+            (r.get("Артикул"), name, uid, price, sid, mid, cid, discount, qty, r.get("Описание товара"), photo),
+        )
+    cur.close()
+    print(f"✅ Импортировано товаров: {len(df)}")
+    return len(df)
+
+
+def import_orders(conn, path, pickup_addresses):
+    df = pd.read_excel(path)
+    cur = conn.cursor()
+    cur.execute("SELECT user_id, full_name FROM users")
+    user_by_name = {_str(fn).lower(): uid for uid, fn in cur.fetchall() if fn}
+    n = 0
+    for _, r in df.iterrows():
+        order_date = pd.to_datetime(r.get("Дата заказа"), errors="coerce")
+        if pd.isna(order_date):
+            continue
+        order_date = order_date.date()
+        delivery_date = pd.to_datetime(r.get("Дата доставки"), errors="coerce")
+        delivery_date = delivery_date.date() if not pd.isna(delivery_date) else None
+        client = _str(r.get("ФИО авторизированного клиента"))
+        user_id = user_by_name.get(client.lower())
+        if user_id is None and pd.notna(r.get("Номер клиента")):
+            try:
+                user_id = int(float(r["Номер клиента"]))
+            except (TypeError, ValueError):
+                pass
+        if user_id is None:
+            continue
+        pp_val = r.get("Адрес пункта выдачи")
+        if pickup_addresses and pp_val is not None and not pd.isna(pp_val):
+            try:
+                idx = int(float(pp_val))
+                pickup_addr = pickup_addresses[idx - 1] if 1 <= idx <= len(pickup_addresses) else _str(pp_val)
+            except (TypeError, ValueError):
+                pickup_addr = _str(pp_val)
+        else:
+            pickup_addr = _str(pp_val) if pp_val is not None and not pd.isna(pp_val) else None
+        pickup_code = _num(r.get("Код для получения"), None, int)
+        status_id = get_or_create_status_id_conn(conn, _str(r.get("Статус заказа")))
+        pickup_point_id = get_or_create_pickup_point_id_conn(conn, pickup_addr) if pickup_addr else None
+        cur.execute(
+            "INSERT INTO orders (order_date, delivery_date, pickup_point_id, user_id, pickup_code, status_id) VALUES (%s, %s, %s, %s, %s, %s)",
+            (order_date, delivery_date, pickup_point_id, user_id, pickup_code, status_id),
+        )
+        n += 1
+    cur.close()
+    print(f"✅ Импортировано заказов: {n}")
+    return n
+
+
+def import_order_items(cur, path):
+    if not os.path.isfile(path):
+        return 0
+    df = pd.read_excel(path)
+    for _, r in df.iterrows():
+        oid, pid = r.get("Номер заказа"), r.get("Номер товара")
+        if oid is None or pid is None or pd.isna(oid) or pd.isna(pid):
+            continue
+        try:
+            oid, pid = int(float(oid)), int(float(pid))
+        except (TypeError, ValueError):
+            continue
+        qty = _num(r.get("Количество", 1), 1, int)
+        unit_price = _num(r.get("Цена"))
+        cur.execute("INSERT INTO order_items (order_id, product_id, quantity, unit_price) VALUES (%s, %s, %s, %s)", (oid, pid, qty, unit_price))
+    print(f"✅ Импортировано позиций заказов: {len(df)}")
+    return len(df)
+
+
+def main():
+    conn = psycopg2.connect(**DB_CONFIG)
+    cur = conn.cursor()
+    try:
+        print("🚀 Начинаем импорт данных...\n")
+        addrs = load_pickup_addresses(PATHS["points"])
+        import_users(conn, PATHS["users"])
+        import_products(conn, PATHS["products"])
+        import_orders(conn, PATHS["orders"], addrs)
+        import_order_items(cur, PATHS["order_items"])
+        conn.commit()
+        print("\n🎉 Импорт завершён успешно!")
+    except Exception as e:
+        conn.rollback()
+        print(f"\n❌ Ошибка при импорте: {e}")
+        import traceback
+        traceback.print_exc()
+    finally:
+        cur.close()
+        conn.close()
+
+
+if __name__ == "__main__":
+    main()

@@ -84,7 +84,7 @@ class Card(BaseCard, Ui_Card):
             self.lbl_unit, self.lbl_stock, self.discount_label,
         ):
             label_widget.setWordWrap(True)
-        category_name = (self.product.get("category") or "").strip()
+        category_name = (self.product.get("category_name") or "").strip()
         product_name = (self.product.get("product_name") or "").strip()
         header_text = f"{category_name} | {product_name}" if category_name and product_name else (product_name or category_name or "—")
         self.lbl_header.setText(header_text)
@@ -92,8 +92,8 @@ class Card(BaseCard, Ui_Card):
         self.lbl_desc_title.setText("Описание товара:")
         description_text = (self.product.get("description") or "").strip()
         self.lbl_desc.setText(description_text or "—")
-        self.lbl_manufacturer.setText("Производитель: " + (self.product.get("manufacturer") or "—"))
-        self.lbl_supplier.setText("Поставщик: " + (self.product.get("supplier") or "—"))
+        self.lbl_manufacturer.setText("Производитель: " + (self.product.get("manufacturer_name") or "—"))
+        self.lbl_supplier.setText("Поставщик: " + (self.product.get("supplier_name") or "—"))
         price_value = float(self.product.get("price") or 0)
         discount_percent = float(self.product.get("discount") or 0)
         price_with_discount = price_value * (1 - discount_percent / 100) if discount_percent else price_value
@@ -103,7 +103,7 @@ class Card(BaseCard, Ui_Card):
             price_text = f"Цена: {price_value:.2f} руб."
         self.lbl_price.setText(price_text)
         self.lbl_price.setTextFormat(Qt.TextFormat.RichText)
-        self.lbl_unit.setText("Единица измерения: " + (self.product.get("unit") or "—"))
+        self.lbl_unit.setText("Единица измерения: " + (self.product.get("unit_code") or "—"))
         self.lbl_stock.setText("Количество на складе: " + str(int(self.product.get("stock_quantity") or 0)))
         discount_display = int(discount_percent) if discount_percent == int(discount_percent) else discount_percent
         self.discount_label.setText("Действующая скидка\n\n" + (f"{discount_display} %" if discount_percent else "—"))

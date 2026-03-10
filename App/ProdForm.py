@@ -105,22 +105,22 @@ class ProdForm(BaseProdForm, Ui_ProdForm):
         self.id_edit.setText(str(product["id"]))
         self.article_edit.setText(product.get("article") or "")
         self.name_edit.setText(product.get("product_name") or "")
-        category_value = product.get("category") or ""
+        category_value = product.get("category_name") or ""
         category_index = self.category_combo.findText(category_value)
         if category_index >= 0:
             self.category_combo.setCurrentIndex(category_index)
         else:
             self.category_combo.setCurrentText(category_value)
         self.desc_edit.setPlainText(product.get("description") or "")
-        manufacturer_value = product.get("manufacturer") or ""
+        manufacturer_value = product.get("manufacturer_name") or ""
         manufacturer_index = self.manuf_combo.findText(manufacturer_value)
         if manufacturer_index >= 0:
             self.manuf_combo.setCurrentIndex(manufacturer_index)
         else:
             self.manuf_combo.setCurrentText(manufacturer_value)
-        self.supp_edit.setText(product.get("supplier") or "")
+        self.supp_edit.setText(product.get("supplier_name") or "")
         self.price_spin.setValue(float(product.get("price") or 0))
-        self.unit_edit.setText(product.get("unit") or "")
+        self.unit_edit.setText(product.get("unit_code") or "")
         self.qty_spin.setValue(int(product.get("stock_quantity") or 0))
         self.discount_spin.setValue(float(product.get("discount") or 0))
         self.old_photo_path = product.get("photo")

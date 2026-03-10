@@ -1,43 +1,41 @@
--- Схема БД в третьей нормальной форме (3НФ), исправленная по замечаниям
--- Без order_article в orders (вычисляется из order_items + products)
--- unit_price в order_items (историчность), UNIQUE(order_id, product_id)
--- units справочник, article NOT NULL UNIQUE
+-- Схема БД в третьей нормальной форме (3НФ)
+-- Имена столбцов конкретные: role_name, category_name, supplier_name и т.д.
 
 -- Справочники
 CREATE TABLE roles (
     role_id SERIAL PRIMARY KEY,
-    name VARCHAR(100) NOT NULL UNIQUE
+    role_name VARCHAR(100) NOT NULL UNIQUE
 );
 
 CREATE TABLE suppliers (
     supplier_id SERIAL PRIMARY KEY,
-    name VARCHAR(255) NOT NULL
+    supplier_name VARCHAR(255) NOT NULL
 );
 
 CREATE TABLE manufacturers (
     manufacturer_id SERIAL PRIMARY KEY,
-    name VARCHAR(255) NOT NULL
+    manufacturer_name VARCHAR(255) NOT NULL
 );
 
 CREATE TABLE categories (
     category_id SERIAL PRIMARY KEY,
-    name VARCHAR(255) NOT NULL
+    category_name VARCHAR(255) NOT NULL
 );
 
 CREATE TABLE units (
     unit_id SERIAL PRIMARY KEY,
-    code VARCHAR(20) NOT NULL UNIQUE,
-    name VARCHAR(100) NOT NULL
+    unit_code VARCHAR(20) NOT NULL UNIQUE,
+    unit_name VARCHAR(100) NOT NULL
 );
 
 CREATE TABLE order_statuses (
     status_id SERIAL PRIMARY KEY,
-    name VARCHAR(100) NOT NULL UNIQUE
+    status_name VARCHAR(100) NOT NULL UNIQUE
 );
 
 CREATE TABLE pickup_points (
     pickup_point_id SERIAL PRIMARY KEY,
-    address VARCHAR(500) NOT NULL
+    pickup_address VARCHAR(500) NOT NULL
 );
 
 -- Пользователи
@@ -49,7 +47,7 @@ CREATE TABLE users (
     role_id INTEGER NOT NULL REFERENCES roles(role_id) ON DELETE RESTRICT
 );
 
--- Товары: article уникален и NOT NULL, unit_id FK
+-- Товары
 CREATE TABLE products (
     id SERIAL PRIMARY KEY,
     article VARCHAR(50) NOT NULL UNIQUE,
@@ -65,7 +63,7 @@ CREATE TABLE products (
     photo VARCHAR(255)
 );
 
--- Заказы: без order_article (данные о товарах только в order_items)
+-- Заказы
 CREATE TABLE orders (
     order_id SERIAL PRIMARY KEY,
     order_date DATE NOT NULL DEFAULT CURRENT_DATE,
@@ -77,7 +75,7 @@ CREATE TABLE orders (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT now()
 );
 
--- Позиции заказа: unit_price — цена в момент заказа (историчность), UNIQUE(order_id, product_id)
+-- Позиции заказа
 CREATE TABLE order_items (
     order_item_id SERIAL PRIMARY KEY,
     order_id INTEGER NOT NULL REFERENCES orders(order_id) ON DELETE CASCADE,
@@ -88,8 +86,6 @@ CREATE TABLE order_items (
 );
 
 -- Начальные данные
-INSERT INTO roles (name) VALUES ('guest'), ('client'), ('manager'), ('administrator');
-INSERT INTO order_statuses (name) VALUES ('новый'), ('в обработке'), ('доставляется'), ('выполнен'), ('отменён');
-INSERT INTO units (code, name) VALUES ('шт', 'Штуки'), ('кг', 'Килограммы'), ('уп', 'Упаковка');
-
--- TRUNCATE users, products, orders, order_items RESTART IDENTITY CASCADE;
+INSERT INTO roles (role_name) VALUES ('guest'), ('client'), ('manager'), ('administrator');
+INSERT INTO order_statuses (status_name) VALUES ('новый'), ('в обработке'), ('доставляется'), ('выполнен'), ('отменён');
+INSERT INTO units (unit_code, unit_name) VALUES ('шт', 'Штуки'), ('кг', 'Килограммы'), ('уп', 'Упаковка');

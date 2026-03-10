@@ -61,10 +61,10 @@ class OrderForm(BaseOrderForm, Ui_OrderForm):
             return
         self.id_edit.setText(str(order.get("id", "")))
         self.article_edit.setText(order.get("order_article") or "")
-        status_index = self.status_combo.findText(order.get("status") or "")
+        status_index = self.status_combo.findText(order.get("status_name") or "")
         if status_index >= 0:
             self.status_combo.setCurrentIndex(status_index)
-        self.pickup_edit.setText(order.get("pickup_point") or "")
+        self.pickup_edit.setText(order.get("pickup_point_address") or "")
         for date_field_name, date_edit_widget in (("order_date", self.order_date_edit), ("delivery_date", self.delivery_date_edit)):
             date_value = order.get(date_field_name)
             if date_value:

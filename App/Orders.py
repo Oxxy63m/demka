@@ -44,8 +44,8 @@ class Orders(BaseOrders, Ui_Orders):
         self.table.setRowCount(len(orders_list))
         for row_index, order in enumerate(orders_list):
             self.table.setItem(row_index, 0, QTableWidgetItem(order.get("order_article") or ""))
-            self.table.setItem(row_index, 1, QTableWidgetItem(order.get("status") or ""))
-            self.table.setItem(row_index, 2, QTableWidgetItem((order.get("pickup_point") or "")[:80]))
+            self.table.setItem(row_index, 1, QTableWidgetItem(order.get("status_name") or ""))
+            self.table.setItem(row_index, 2, QTableWidgetItem((order.get("pickup_point_address") or "")[:80]))
             self.table.setItem(row_index, 3, QTableWidgetItem(str(order.get("order_date") or "")))
             self.table.setItem(row_index, 4, QTableWidgetItem(str(order.get("delivery_date") or "")))
             self.table.setItem(row_index, 5, QTableWidgetItem(order.get("user_name") or ""))

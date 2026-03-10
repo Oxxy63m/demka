@@ -14,16 +14,23 @@ from App.config import DB_CONFIG
 
 
 def auth_user(login, password):
-    """Проверяет логин и пароль. Возвращает словарь пользователя (user_id, login, full_name, role) или None."""
+    """Проверяет логин и пароль. Возвращает словарь пользователя (user_id, login, full_name, role_name) или None."""
     login = (login or "").strip()
     password = (password or "").strip()
     connection = psycopg2.connect(**DB_CONFIG)
     cursor = connection.cursor(cursor_factory=RealDictCursor)
-    cursor.execute(
-        "SELECT u.user_id, u.login, u.full_name, r.name AS role FROM users u "
-        "JOIN roles r ON u.role_id = r.role_id WHERE TRIM(u.login) = %s AND TRIM(u.user_password) = %s",
-        (login, password),
-    )
+    try:
+        cursor.execute(
+            "SELECT u.user_id, u.login, u.full_name, r.role_name FROM users u "
+            "JOIN roles r ON u.role_id = r.role_id WHERE TRIM(u.login) = %s AND TRIM(u.user_password) = %s",
+            (login, password),
+        )
+    except Exception:
+        cursor.execute(
+            "SELECT u.user_id, u.login, u.full_name, r.name AS role_name FROM users u "
+            "JOIN roles r ON u.role_id = r.role_id WHERE TRIM(u.login) = %s AND TRIM(u.user_password) = %s",
+            (login, password),
+        )
     user_row = cursor.fetchone()
     cursor.close()
     connection.close()
@@ -38,8 +45,8 @@ def get_products_all(search_text="", supplier_name=None, order_by_quantity=None)
     cur = conn.cursor(cursor_factory=RealDictCursor)
     try:
         query = (
-            "SELECT p.id, p.article, p.product_name, c.name AS category, p.description, m.name AS manufacturer, "
-            "s.name AS supplier, p.price, u.code AS unit, p.stock_quantity, p.discount, p.photo "
+            "SELECT p.id, p.article, p.product_name, c.category_name, p.description, m.manufacturer_name, "
+            "s.supplier_name, p.price, u.unit_code, p.stock_quantity, p.discount, p.photo "
             "FROM products p "
             "LEFT JOIN categories c ON p.category_id = c.category_id "
             "LEFT JOIN manufacturers m ON p.manufacturer_id = m.manufacturer_id "
@@ -49,10 +56,10 @@ def get_products_all(search_text="", supplier_name=None, order_by_quantity=None)
         params = []
         if search_text and search_text.strip():
             q = "%" + search_text.strip() + "%"
-            query += " AND (p.article ILIKE %s OR p.product_name ILIKE %s OR p.description ILIKE %s OR c.name ILIKE %s OR m.name ILIKE %s OR s.name ILIKE %s OR u.code ILIKE %s)"
+            query += " AND (p.article ILIKE %s OR p.product_name ILIKE %s OR p.description ILIKE %s OR c.category_name ILIKE %s OR m.manufacturer_name ILIKE %s OR s.supplier_name ILIKE %s OR u.unit_code ILIKE %s)"
             params = [q] * 7
         if supplier_name:
-            query += " AND s.name = %s"
+            query += " AND s.supplier_name = %s"
             params.append(supplier_name)
         if order_by_quantity == "asc":
             query += " ORDER BY p.stock_quantity ASC"
@@ -64,7 +71,7 @@ def get_products_all(search_text="", supplier_name=None, order_by_quantity=None)
         rows = cur.fetchall()
     except Exception:
         # Старая схема: в products колонки unit, supplier, manufacturer, category (без справочников)
-        query = "SELECT id, article, product_name, category, description, manufacturer, supplier, price, unit, stock_quantity, discount, photo FROM products WHERE 1=1"
+        query = "SELECT id, article, product_name, category AS category_name, description, manufacturer AS manufacturer_name, supplier AS supplier_name, price, unit AS unit_code, stock_quantity, discount, photo FROM products WHERE 1=1"
         params = []
         if search_text and search_text.strip():
             q = "%" + search_text.strip() + "%"
@@ -92,8 +99,8 @@ def get_product_by_id(product_id):
     cur = conn.cursor(cursor_factory=RealDictCursor)
     try:
         cur.execute(
-            "SELECT p.id, p.article, p.product_name, c.name AS category, p.description, m.name AS manufacturer, "
-            "s.name AS supplier, p.price, u.code AS unit, p.stock_quantity, p.discount, p.photo "
+            "SELECT p.id, p.article, p.product_name, c.category_name, p.description, m.manufacturer_name, "
+            "s.supplier_name, p.price, u.unit_code, p.stock_quantity, p.discount, p.photo "
             "FROM products p LEFT JOIN categories c ON p.category_id = c.category_id "
             "LEFT JOIN manufacturers m ON p.manufacturer_id = m.manufacturer_id "
             "LEFT JOIN suppliers s ON p.supplier_id = s.supplier_id "
@@ -103,7 +110,7 @@ def get_product_by_id(product_id):
         row = cur.fetchone()
     except Exception:
         cur.execute(
-            "SELECT id, article, product_name, category, description, manufacturer, supplier, price, unit, stock_quantity, discount, photo FROM products WHERE id = %s",
+            "SELECT id, article, product_name, category AS category_name, description, manufacturer AS manufacturer_name, supplier AS supplier_name, price, unit AS unit_code, stock_quantity, discount, photo FROM products WHERE id = %s",
             (product_id,),
         )
         row = cur.fetchone()
@@ -117,7 +124,7 @@ def get_supplier_names():
     conn = psycopg2.connect(**DB_CONFIG)
     cur = conn.cursor()
     try:
-        cur.execute("SELECT name FROM suppliers ORDER BY name")
+        cur.execute("SELECT supplier_name FROM suppliers ORDER BY supplier_name")
         out = [r[0] for r in cur.fetchall()]
     except Exception:
         cur.execute("SELECT DISTINCT supplier FROM products WHERE supplier IS NOT NULL AND supplier != '' ORDER BY supplier")
@@ -132,7 +139,7 @@ def get_category_names():
     conn = psycopg2.connect(**DB_CONFIG)
     cur = conn.cursor()
     try:
-        cur.execute("SELECT name FROM categories ORDER BY name")
+        cur.execute("SELECT category_name FROM categories ORDER BY category_name")
         out = [r[0] for r in cur.fetchall()]
     except Exception:
         cur.execute("SELECT DISTINCT category FROM products WHERE category IS NOT NULL AND category != '' ORDER BY category")
@@ -147,7 +154,7 @@ def get_manufacturer_names():
     conn = psycopg2.connect(**DB_CONFIG)
     cur = conn.cursor()
     try:
-        cur.execute("SELECT name FROM manufacturers ORDER BY name")
+        cur.execute("SELECT manufacturer_name FROM manufacturers ORDER BY manufacturer_name")
         out = [r[0] for r in cur.fetchall()]
     except Exception:
         cur.execute("SELECT DISTINCT manufacturer FROM products WHERE manufacturer IS NOT NULL AND manufacturer != '' ORDER BY manufacturer")
@@ -162,7 +169,7 @@ def get_unit_names():
     conn = psycopg2.connect(**DB_CONFIG)
     cur = conn.cursor()
     try:
-        cur.execute("SELECT code FROM units ORDER BY code")
+        cur.execute("SELECT unit_code FROM units ORDER BY unit_code")
         out = [r[0] for r in cur.fetchall()]
     except Exception:
         cur.execute("SELECT DISTINCT unit FROM products WHERE unit IS NOT NULL AND unit != '' ORDER BY unit")
@@ -176,11 +183,17 @@ def _get_or_create_supplier_id(cursor, name):
     if not name or not str(name).strip():
         return None
     name = str(name).strip()
-    cursor.execute("SELECT supplier_id FROM suppliers WHERE name = %s", (name,))
+    try:
+        cursor.execute("SELECT supplier_id FROM suppliers WHERE supplier_name = %s", (name,))
+    except Exception:
+        cursor.execute("SELECT supplier_id FROM suppliers WHERE name = %s", (name,))
     row = cursor.fetchone()
     if row:
         return row[0]
-    cursor.execute("INSERT INTO suppliers (name) VALUES (%s) RETURNING supplier_id", (name,))
+    try:
+        cursor.execute("INSERT INTO suppliers (supplier_name) VALUES (%s) RETURNING supplier_id", (name,))
+    except Exception:
+        cursor.execute("INSERT INTO suppliers (name) VALUES (%s) RETURNING supplier_id", (name,))
     return cursor.fetchone()[0]
 
 
@@ -188,11 +201,17 @@ def _get_or_create_manufacturer_id(cursor, name):
     if not name or not str(name).strip():
         return None
     name = str(name).strip()
-    cursor.execute("SELECT manufacturer_id FROM manufacturers WHERE name = %s", (name,))
+    try:
+        cursor.execute("SELECT manufacturer_id FROM manufacturers WHERE manufacturer_name = %s", (name,))
+    except Exception:
+        cursor.execute("SELECT manufacturer_id FROM manufacturers WHERE name = %s", (name,))
     row = cursor.fetchone()
     if row:
         return row[0]
-    cursor.execute("INSERT INTO manufacturers (name) VALUES (%s) RETURNING manufacturer_id", (name,))
+    try:
+        cursor.execute("INSERT INTO manufacturers (manufacturer_name) VALUES (%s) RETURNING manufacturer_id", (name,))
+    except Exception:
+        cursor.execute("INSERT INTO manufacturers (name) VALUES (%s) RETURNING manufacturer_id", (name,))
     return cursor.fetchone()[0]
 
 
@@ -200,11 +219,17 @@ def _get_or_create_category_id(cursor, name):
     if not name or not str(name).strip():
         return None
     name = str(name).strip()
-    cursor.execute("SELECT category_id FROM categories WHERE name = %s", (name,))
+    try:
+        cursor.execute("SELECT category_id FROM categories WHERE category_name = %s", (name,))
+    except Exception:
+        cursor.execute("SELECT category_id FROM categories WHERE name = %s", (name,))
     row = cursor.fetchone()
     if row:
         return row[0]
-    cursor.execute("INSERT INTO categories (name) VALUES (%s) RETURNING category_id", (name,))
+    try:
+        cursor.execute("INSERT INTO categories (category_name) VALUES (%s) RETURNING category_id", (name,))
+    except Exception:
+        cursor.execute("INSERT INTO categories (name) VALUES (%s) RETURNING category_id", (name,))
     return cursor.fetchone()[0]
 
 
@@ -212,11 +237,17 @@ def _get_or_create_unit_id(cursor, code_or_name):
     if not code_or_name or not str(code_or_name).strip():
         return None
     val = str(code_or_name).strip()
-    cursor.execute("SELECT unit_id FROM units WHERE code = %s OR name = %s", (val, val))
+    try:
+        cursor.execute("SELECT unit_id FROM units WHERE unit_code = %s OR unit_name = %s", (val, val))
+    except Exception:
+        cursor.execute("SELECT unit_id FROM units WHERE code = %s OR name = %s", (val, val))
     row = cursor.fetchone()
     if row:
         return row[0]
-    cursor.execute("INSERT INTO units (code, name) VALUES (%s, %s) RETURNING unit_id", (val, val))
+    try:
+        cursor.execute("INSERT INTO units (unit_code, unit_name) VALUES (%s, %s) RETURNING unit_id", (val, val))
+    except Exception:
+        cursor.execute("INSERT INTO units (code, name) VALUES (%s, %s) RETURNING unit_id", (val, val))
     return cursor.fetchone()[0]
 
 
@@ -316,15 +347,24 @@ def delete_product(product_id):
 
 def _get_or_create_status_id(cursor, name):
     if not name or not str(name).strip():
-        cursor.execute("SELECT status_id FROM order_statuses WHERE name = 'новый' LIMIT 1")
+        try:
+            cursor.execute("SELECT status_id FROM order_statuses WHERE status_name = 'новый' LIMIT 1")
+        except Exception:
+            cursor.execute("SELECT status_id FROM order_statuses WHERE name = 'новый' LIMIT 1")
         row = cursor.fetchone()
         return row[0] if row else None
     name = str(name).strip()
-    cursor.execute("SELECT status_id FROM order_statuses WHERE name = %s", (name,))
+    try:
+        cursor.execute("SELECT status_id FROM order_statuses WHERE status_name = %s", (name,))
+    except Exception:
+        cursor.execute("SELECT status_id FROM order_statuses WHERE name = %s", (name,))
     row = cursor.fetchone()
     if row:
         return row[0]
-    cursor.execute("INSERT INTO order_statuses (name) VALUES (%s) RETURNING status_id", (name,))
+    try:
+        cursor.execute("INSERT INTO order_statuses (status_name) VALUES (%s) RETURNING status_id", (name,))
+    except Exception:
+        cursor.execute("INSERT INTO order_statuses (name) VALUES (%s) RETURNING status_id", (name,))
     return cursor.fetchone()[0]
 
 
@@ -332,22 +372,28 @@ def _get_or_create_pickup_point_id(cursor, address):
     if not address or not str(address).strip():
         return None
     address = str(address).strip()
-    cursor.execute("SELECT pickup_point_id FROM pickup_points WHERE address = %s", (address,))
+    try:
+        cursor.execute("SELECT pickup_point_id FROM pickup_points WHERE pickup_address = %s", (address,))
+    except Exception:
+        cursor.execute("SELECT pickup_point_id FROM pickup_points WHERE address = %s", (address,))
     row = cursor.fetchone()
     if row:
         return row[0]
-    cursor.execute("INSERT INTO pickup_points (address) VALUES (%s) RETURNING pickup_point_id", (address,))
+    try:
+        cursor.execute("INSERT INTO pickup_points (pickup_address) VALUES (%s) RETURNING pickup_point_id", (address,))
+    except Exception:
+        cursor.execute("INSERT INTO pickup_points (address) VALUES (%s) RETURNING pickup_point_id", (address,))
     return cursor.fetchone()[0]
 
 
 def get_orders_all():
-    """Возвращает список всех заказов (словари с id, order_date, pickup_point, status, user_name и т.д.)."""
+    """Возвращает список всех заказов (словари с id, order_date, pickup_point_address, status_name, user_name и т.д.)."""
     conn = psycopg2.connect(**DB_CONFIG)
     cur = conn.cursor(cursor_factory=RealDictCursor)
     try:
         cur.execute(
-            "SELECT o.order_id AS id, o.order_date, o.delivery_date, pp.address AS pickup_point, "
-            "st.name AS status, o.user_id, u.full_name AS user_name "
+            "SELECT o.order_id AS id, o.order_date, o.delivery_date, pp.pickup_address AS pickup_point_address, "
+            "st.status_name, o.user_id, u.full_name AS user_name "
             "FROM orders o JOIN users u ON o.user_id = u.user_id "
             "LEFT JOIN order_statuses st ON o.status_id = st.status_id "
             "LEFT JOIN pickup_points pp ON o.pickup_point_id = pp.pickup_point_id "
@@ -358,7 +404,7 @@ def get_orders_all():
             r["order_article"] = ""
     except Exception:
         cur.execute(
-            "SELECT o.order_id AS id, o.order_date, o.delivery_date, o.pickup_point, o.status, o.user_id, u.full_name AS user_name "
+            "SELECT o.order_id AS id, o.order_date, o.delivery_date, o.pickup_point AS pickup_point_address, o.status AS status_name, o.user_id, u.full_name AS user_name "
             "FROM orders o JOIN users u ON o.user_id = u.user_id ORDER BY o.order_date DESC, o.order_id DESC"
         )
         rows = cur.fetchall()
@@ -375,7 +421,7 @@ def get_order_by_id(order_id):
     cur = conn.cursor(cursor_factory=RealDictCursor)
     try:
         cur.execute(
-            "SELECT o.order_id AS id, o.order_date, o.delivery_date, pp.address AS pickup_point, st.name AS status, o.user_id "
+            "SELECT o.order_id AS id, o.order_date, o.delivery_date, pp.pickup_address AS pickup_point_address, st.status_name, o.user_id "
             "FROM orders o LEFT JOIN order_statuses st ON o.status_id = st.status_id "
             "LEFT JOIN pickup_points pp ON o.pickup_point_id = pp.pickup_point_id WHERE o.order_id = %s",
             (order_id,),
@@ -385,7 +431,7 @@ def get_order_by_id(order_id):
             row["order_article"] = ""
     except Exception:
         cur.execute(
-            "SELECT order_id AS id, order_date, delivery_date, pickup_point, status, user_id FROM orders WHERE order_id = %s",
+            "SELECT order_id AS id, order_date, delivery_date, pickup_point AS pickup_point_address, status AS status_name, user_id FROM orders WHERE order_id = %s",
             (order_id,),
         )
         row = cur.fetchone()
@@ -493,13 +539,20 @@ def get_or_create_role_id(connection, name):
         return None
     name = str(name).strip()
     cursor = connection.cursor()
-    cursor.execute("SELECT role_id FROM roles WHERE name = %s", (name,))
+    try:
+        cursor.execute("SELECT role_id FROM roles WHERE role_name = %s", (name,))
+    except Exception:
+        cursor.execute("SELECT role_id FROM roles WHERE name = %s", (name,))
     row = cursor.fetchone()
     if row:
         cursor.close()
         return row[0]
-    cursor.execute("INSERT INTO roles (name) VALUES (%s) ON CONFLICT (name) DO NOTHING", (name,))
-    cursor.execute("SELECT role_id FROM roles WHERE name = %s", (name,))
+    try:
+        cursor.execute("INSERT INTO roles (role_name) VALUES (%s) ON CONFLICT (role_name) DO NOTHING", (name,))
+        cursor.execute("SELECT role_id FROM roles WHERE role_name = %s", (name,))
+    except Exception:
+        cursor.execute("INSERT INTO roles (name) VALUES (%s) ON CONFLICT (name) DO NOTHING", (name,))
+        cursor.execute("SELECT role_id FROM roles WHERE name = %s", (name,))
     row = cursor.fetchone()
     cursor.close()
     return row[0] if row else None

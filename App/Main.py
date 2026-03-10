@@ -15,7 +15,7 @@ class Main(BaseMain, Ui_Main):
         super().__init__(parent)
         self.setupUi(self)
         self.user = user
-        self.role = user.get("role", "guest")
+        self.role = user.get("role_name", "guest")
         self.edit_open = False
         self.cart = []  # корзина для клиента: список {product_id, product_name, price, quantity}
         self.setWindowTitle("Список товаров")
