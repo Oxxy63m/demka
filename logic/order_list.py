@@ -1,10 +1,4 @@
-# Логика окна заказов: загрузка списка заказов и удаление заказа.
-import os
-import sys
-
-_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-if _root not in sys.path:
-    sys.path.insert(0, _root)
+# Список заказов: загрузка и удаление.
 from App.db import get_orders_all, delete_order as _del_order
 
 

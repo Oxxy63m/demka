@@ -1,14 +1,7 @@
-# Логика формы заказа: загрузка по id, сохранение (добавление/редактирование), статусы и список пользователей.
-import os
-import sys
-
-_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-if _root not in sys.path:
-    sys.path.insert(0, _root)
-
-from App.config import ORDER_STATUSES
+# Форма заказа: загрузка по id, сохранение; статусы и пользователи — из БД.
 from App.db import (
     get_order_by_id as _get_order_by_id,
+    get_order_statuses as _get_order_statuses,
     get_users_list as _get_users_list,
     insert_order as _insert_order,
     update_order as _update_order,
@@ -16,8 +9,8 @@ from App.db import (
 
 
 def get_order_statuses():
-    """Возвращает список статусов заказа для выпадающего списка в форме заказа."""
-    return list(ORDER_STATUSES)
+    """Список статусов заказа для выпадающего списка (из БД)."""
+    return _get_order_statuses()
 
 
 def get_users_list():

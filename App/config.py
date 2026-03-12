@@ -34,5 +34,3 @@ ROLE_GUEST = "guest"
 ROLE_CLIENT = "client"
 ROLE_MANAGER = "manager"
 ROLE_ADMINISTRATOR = "administrator"
-ORDER_STATUSES = ["новый", "в обработке", "доставляется", "выполнен", "отменён"]
-PICKUP_POINTS = ["Пункт выдачи 1", "Пункт выдачи 2", "Пункт выдачи 3"]

@@ -11,28 +11,25 @@ Ui_Card, BaseCard = loadUiType(UI["card"])
 
 
 def _resolve_product_photo_path(photo_filename):
-    """Ищет файл фото в папке DATA_DIR (resources)."""
     if not photo_filename:
         return None
     photo_filename = os.path.basename(str(photo_filename).strip())
-    for folder in (DATA_DIR,):
-        folder = os.path.normpath(os.path.abspath(folder))
-        if not os.path.isdir(folder):
-            continue
-        full_path = os.path.normpath(os.path.join(folder, photo_filename))
-        if os.path.isfile(full_path):
-            return full_path
-        try:
-            for filename_in_folder in os.listdir(folder):
-                if filename_in_folder.lower() == photo_filename.lower():
-                    return os.path.normpath(os.path.join(folder, filename_in_folder))
-        except OSError:
-            pass
+    folder = os.path.normpath(os.path.abspath(DATA_DIR))
+    if not os.path.isdir(folder):
+        return None
+    full_path = os.path.normpath(os.path.join(folder, photo_filename))
+    if os.path.isfile(full_path):
+        return full_path
+    try:
+        for name in os.listdir(folder):
+            if name.lower() == photo_filename.lower():
+                return os.path.normpath(os.path.join(folder, name))
+    except OSError:
+        pass
     return None
 
 
 def _load_product_photo_pixmap(image_path, width=IMAGE_MAX_WIDTH, height=IMAGE_MAX_HEIGHT):
-    """Загружает изображение товара или плейсхолдер picture.png и масштабирует под размер карточки."""
     full_path = _resolve_product_photo_path(image_path) or _resolve_product_photo_path(PLACEHOLDER_IMAGE) or os.path.normpath(os.path.join(DATA_DIR, PLACEHOLDER_IMAGE))
     pixmap = QPixmap(full_path)
     if pixmap.isNull():
@@ -59,12 +56,10 @@ class Card(BaseCard, Ui_Card):
         super().__init__(parent)
         self.setupUi(self)
         self.product = product
-        self.product_id = product.get("id")
+        self.product_id = product.get("product_id")
         self._is_admin = is_admin
         self._is_client = is_client
         self.setMinimumHeight(200)
-        if hasattr(self, "center_layout"):
-            self.center_layout.setSpacing(0)
         self._fill_card()
         self._apply_highlight()
         if hasattr(self, "btn_delete"):
@@ -77,7 +72,6 @@ class Card(BaseCard, Ui_Card):
                 self.btn_order.clicked.connect(self._emit_add_to_cart)
 
     def _fill_card(self):
-        """Заполняет поля карточки: название, описание, цена, скидка, фото и т.д."""
         for label_widget in (
             self.lbl_header, self.lbl_desc_title, self.lbl_desc,
             self.lbl_manufacturer, self.lbl_supplier, self.lbl_price,
@@ -103,7 +97,7 @@ class Card(BaseCard, Ui_Card):
             price_text = f"Цена: {price_value:.2f} руб."
         self.lbl_price.setText(price_text)
         self.lbl_price.setTextFormat(Qt.TextFormat.RichText)
-        self.lbl_unit.setText("Единица измерения: " + (self.product.get("unit_code") or "—"))
+        self.lbl_unit.setText("Единица измерения: " + (self.product.get("unit_name") or "—"))
         self.lbl_stock.setText("Количество на складе: " + str(int(self.product.get("stock_quantity") or 0)))
         discount_display = int(discount_percent) if discount_percent == int(discount_percent) else discount_percent
         self.discount_label.setText("Действующая скидка\n\n" + (f"{discount_display} %" if discount_percent else "—"))
@@ -112,7 +106,6 @@ class Card(BaseCard, Ui_Card):
         self.photo_label.setStyleSheet("background: #f0f0f0;")
 
     def _apply_highlight(self):
-        """Подсвечивает карточку: зелёная при скидке >15%, голубая при нулевом остатке."""
         discount_percent = float(self.product.get("discount") or 0)
         stock_quantity = int(self.product.get("stock_quantity") or 0)
         self.setFrameShape(QFrame.Shape.Box)
@@ -130,7 +123,6 @@ class Card(BaseCard, Ui_Card):
             self.setStyleSheet("QFrame#ProductCard { border: 1px solid #ccc; background-color: #fff; }")
 
     def _emit_add_to_cart(self):
-        """Отправляет сигнал add_to_cart с данными товара (id, название, цена со скидкой, количество 1)."""
         price = float(self.product.get("price") or 0)
         discount = float(self.product.get("discount") or 0)
         price_with_discount = price * (1 - discount / 100) if discount else price

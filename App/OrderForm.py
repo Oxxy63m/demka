@@ -19,7 +19,6 @@ class OrderForm(BaseOrderForm, Ui_OrderForm):
         self.order_id = order_id
         self.is_edit = order_id is not None
         self.setWindowTitle("Редактирование заказа" if self.is_edit else "Добавление заказа")
-        self.article_edit.setPlaceholderText("Артикул заказа")
         self.pickup_edit.setPlaceholderText("Адрес пункта выдачи")
         for status_text in get_order_statuses():
             self.status_combo.addItem(status_text)
@@ -52,30 +51,28 @@ class OrderForm(BaseOrderForm, Ui_OrderForm):
     def _load_order(self):
         try:
             order = load_order(self.order_id)
-        except Exception as load_error:
-            QMessageBox.critical(self, "Ошибка", str(load_error))
+        except Exception as error:
+            QMessageBox.critical(self, "Ошибка", str(error))
             self.reject()
             return
         if not order:
             self.reject()
             return
         self.id_edit.setText(str(order.get("id", "")))
-        self.article_edit.setText(order.get("order_article") or "")
         status_index = self.status_combo.findText(order.get("status_name") or "")
         if status_index >= 0:
             self.status_combo.setCurrentIndex(status_index)
         self.pickup_edit.setText(order.get("pickup_point_address") or "")
-        for date_field_name, date_edit_widget in (("order_date", self.order_date_edit), ("delivery_date", self.delivery_date_edit)):
-            date_value = order.get(date_field_name)
-            if date_value:
-                date_object = date_value if hasattr(date_value, "year") else date.fromisoformat(str(date_value)[:10])
-                date_edit_widget.setDate(QDate(date_object.year, date_object.month, date_object.day))
+        for key, widget in (("order_date", self.order_date_edit), ("delivery_date", self.delivery_date_edit)):
+            val = order.get(key)
+            if val:
+                d = val if hasattr(val, "year") else date.fromisoformat(str(val)[:10])
+                widget.setDate(QDate(d.year, d.month, d.day))
         user_index = self.user_combo.findData(order.get("user_id"))
         if user_index >= 0:
             self.user_combo.setCurrentIndex(user_index)
 
     def _save(self):
-        """Проверяет выбор клиента и сохраняет заказ в БД (добавление или обновление), затем закрывает форму."""
         user_id = self.user_combo.currentData()
         if user_id is None and self.user_combo.count():
             user_id = self.user_combo.itemData(0)
@@ -83,7 +80,6 @@ class OrderForm(BaseOrderForm, Ui_OrderForm):
             QMessageBox.warning(self, "Ошибка", "Выберите клиента.")
             return
         data = {
-            "order_article": self.article_edit.text().strip(),
             "status": self.status_combo.currentText().strip() or get_order_statuses()[0],
             "pickup_point": self.pickup_edit.text().strip(),
             "order_date": self.order_date_edit.date().toPython(),
@@ -92,8 +88,7 @@ class OrderForm(BaseOrderForm, Ui_OrderForm):
         }
         try:
             save_order(self.order_id if self.is_edit else None, data)
-            QMessageBox.information(self, "Готово", "Заказ обновлён." if self.is_edit else "Заказ добавлен.")
             self.accepted.emit()
             self.accept()
-        except Exception as save_error:
-            QMessageBox.critical(self, "Ошибка", str(save_error))
+        except Exception as error:
+            QMessageBox.critical(self, "Ошибка", str(error))

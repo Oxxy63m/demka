@@ -1,4 +1,4 @@
-# Точка входа приложения. Запуск: python main.py (сначала один раз: python create_db.py)
+# Точка входа. Запуск: python main.py
 import os
 import sys
 from PySide6.QtWidgets import QApplication

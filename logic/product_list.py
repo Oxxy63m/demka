@@ -1,10 +1,4 @@
-# Логика каталога товаров: загрузка списка, фильтры, проверка «товар в заказе», удаление.
-import os
-import sys
-
-_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-if _root not in sys.path:
-    sys.path.insert(0, _root)
+# Каталог товаров: загрузка списка, фильтры, удаление.
 from App.db import (
     get_products_all as _get_all,
     get_supplier_names as _get_supp,

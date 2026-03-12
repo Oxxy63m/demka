@@ -1,10 +1,5 @@
-# Логика формы товара: загрузка по id, сохранение (добавление/редактирование), списки категорий и производителей.
+# Форма товара: загрузка по id, сохранение, списки категорий и производителей.
 import os
-import sys
-
-_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-if _root not in sys.path:
-    sys.path.insert(0, _root)
 
 from App.db import (
     get_product_by_id as _get_product_by_id,
@@ -13,7 +8,7 @@ from App.db import (
     insert_product as _insert_product,
     update_product as _update_product,
 )
-from App.config import ROOT
+from App.config import DATA_DIR
 
 
 def get_category_names():
@@ -34,7 +29,7 @@ def load_product(product_id):
 def save_product(product_id, data, old_photo_path=None):
     """Сохраняет товар: при product_id=None — добавление, иначе обновление. data — словарь полей. old_photo_path — старый путь фото при редактировании (при смене фото файл удаляется)."""
     if old_photo_path and old_photo_path != data.get("photo"):
-        old_full = os.path.join(ROOT, old_photo_path)
+        old_full = os.path.join(DATA_DIR, old_photo_path)
         if os.path.isfile(old_full):
             try:
                 os.remove(old_full)

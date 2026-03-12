@@ -1,4 +1,3 @@
-# Главное окно приложения: каталог товаров, фильтры, корзина, кнопки «Заказы» и «Добавить». Разметка — ui/main.ui.
 from PySide6.QtWidgets import QMainWindow, QMessageBox, QSizePolicy, QDialog, QPushButton
 from PySide6.QtCore import Qt
 from PySide6.QtUiTools import loadUiType
@@ -17,16 +16,16 @@ class Main(BaseMain, Ui_Main):
         self.user = user
         self.role = user.get("role_name", "guest")
         self.edit_open = False
-        self.cart = []  # корзина для клиента: список {product_id, product_name, price, quantity}
-        self.setWindowTitle("Список товаров")
+        self.cart = []
+        self.setWindowTitle(f"Список товаров ({self.role})")
         self.lbl_title.setStyleSheet("font-weight: bold; font-size: 18pt;")
         self.lbl_user.setWordWrap(True)
         self.lbl_user.setText(user.get("full_name", "Гость"))
         search_and_filter_widgets = (self.lbl_search, self.search_edit, self.lbl_supplier, self.supplier_combo, self.lbl_sort, self.sort_combo)
         self.btn_orders.clicked.connect(self._open_orders)
         # Кнопка «Заказ» — видна гостю и клиенту, по нажатию открывается корзина
-        btn_cart = getattr(self, "btn_cart", None) or self.findChild(QPushButton, "btn_cart")
-        if btn_cart is not None:
+        btn_cart = getattr(self, "btn_cart", None)
+        if btn_cart:
             btn_cart.setVisible(self.role in (ROLE_CLIENT, ROLE_GUEST))
             btn_cart.clicked.connect(self._open_cart)
         if self.role not in (ROLE_MANAGER, ROLE_ADMINISTRATOR):
@@ -53,14 +52,13 @@ class Main(BaseMain, Ui_Main):
         self._refresh_product_list()
 
     def _refresh_product_list(self):
-        """Загружает список товаров из БД по фильтрам и заполняет каталог карточками."""
         search_text = self.search_edit.text() if self.search_edit.isVisible() else ""
         supplier_filter = self.supplier_combo.currentData()
         sort_by_quantity = self.sort_combo.currentData()
         try:
             product_list = load_products(search_text, supplier_filter, sort_by_quantity)
-        except Exception as load_error:
-            QMessageBox.critical(self, "Ошибка", f"Ошибка загрузки данных: {load_error}")
+        except Exception as error:
+            QMessageBox.critical(self, "Ошибка", str(error))
             return
         while self.cards_layout.count():
             layout_item = self.cards_layout.takeAt(0)
@@ -78,10 +76,11 @@ class Main(BaseMain, Ui_Main):
             self.cards_layout.addWidget(card)
 
     def _open_orders(self):
-        """Открывает окно со списком заказов."""
         from App.Orders import Orders
-        # Ссылку храним в self, иначе окно уничтожается сборщиком мусора и сразу закрывается
-        self._orders_window = Orders(self.user, parent=None)
+        self._orders_window = Orders(self.user, parent=self)
+        self._orders_window.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose)
+        self._orders_window.destroyed.connect(lambda: self.setEnabled(True))
+        self.setEnabled(False)
         self._orders_window.setWindowTitle("Заказы")
         self._orders_window.showMaximized()
 
@@ -101,13 +100,12 @@ class Main(BaseMain, Ui_Main):
         self.cart.append({"product_id": item["product_id"], "product_name": item["product_name"], "price": item["price"], "quantity": item.get("quantity", 1)})
 
     def _open_product_edit_form(self, product_id):
-        """Открывает форму добавления или редактирования товара (product_id=None — новый товар)."""
         if self.edit_open:
-            QMessageBox.warning(self, "Предупреждение", "Закройте окно редактирования.")
             return
         from App.ProdForm import ProdForm
         self.edit_open = True
         product_form_window = ProdForm(product_id, self)
+        product_form_window.setWindowModality(Qt.WindowModality.WindowModal)
         product_form_window.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose)
         product_form_window.destroyed.connect(lambda: setattr(self, "edit_open", False))
         product_form_window.accepted.connect(self._refresh_product_list)
@@ -118,19 +116,20 @@ class Main(BaseMain, Ui_Main):
         self._open_product_edit_form(None)
 
     def _on_delete_product_card(self, product_id):
-        """Удаляет товар из БД после подтверждения; если товар в заказе — отказ."""
         if product_in_orders(product_id):
             QMessageBox.warning(self, "Ошибка", "Товар в заказе, удалить нельзя.")
             return
-        if QMessageBox.question(
-            self, "Подтверждение", "Удалить товар?",
-            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
-            QMessageBox.StandardButton.No
-        ) != QMessageBox.StandardButton.Yes:
+        box = QMessageBox(self)
+        box.setWindowTitle("Подтверждение")
+        box.setText("Удалить товар?")
+        btn_yes = box.addButton("Да", QMessageBox.ButtonRole.YesRole)
+        btn_no = box.addButton("Нет", QMessageBox.ButtonRole.NoRole)
+        box.setDefaultButton(btn_no)
+        box.exec()
+        if box.clickedButton() != btn_yes:
             return
         try:
             delete_product(product_id)
-            QMessageBox.information(self, "Готово", "Товар удалён.")
             self._refresh_product_list()
-        except Exception as delete_error:
-            QMessageBox.critical(self, "Ошибка", str(delete_error))
+        except Exception as error:
+            QMessageBox.critical(self, "Ошибка", str(error))

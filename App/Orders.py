@@ -14,7 +14,7 @@ class Orders(BaseOrders, Ui_Orders):
         super().__init__(parent)
         self.setupUi(self)
         self.user = user
-        self.role = user.get("role", "guest")
+        self.role = user.get("role_name") or user.get("role", "guest")
         self.edit_open = False
         self.setWindowTitle("Заказы")
         self.lbl_user.setWordWrap(True)
@@ -35,15 +35,14 @@ class Orders(BaseOrders, Ui_Orders):
         self._refresh_orders_table()
 
     def _refresh_orders_table(self):
-        """Загружает заказы из БД и заполняет таблицу."""
         try:
             orders_list = load_orders()
-        except Exception as load_error:
-            QMessageBox.critical(self, "Ошибка", str(load_error))
+        except Exception as error:
+            QMessageBox.critical(self, "Ошибка", str(error))
             return
         self.table.setRowCount(len(orders_list))
         for row_index, order in enumerate(orders_list):
-            self.table.setItem(row_index, 0, QTableWidgetItem(order.get("order_article") or ""))
+            self.table.setItem(row_index, 0, QTableWidgetItem(str(order.get("id", ""))))
             self.table.setItem(row_index, 1, QTableWidgetItem(order.get("status_name") or ""))
             self.table.setItem(row_index, 2, QTableWidgetItem((order.get("pickup_point_address") or "")[:80]))
             self.table.setItem(row_index, 3, QTableWidgetItem(str(order.get("order_date") or "")))
@@ -52,7 +51,6 @@ class Orders(BaseOrders, Ui_Orders):
             self.table.item(row_index, 0).setData(Qt.ItemDataRole.UserRole, order.get("id"))
 
     def _get_selected_order_id(self):
-        """Возвращает id выбранного в таблице заказа или None."""
         current_row = self.table.currentRow()
         if current_row < 0:
             return None
@@ -60,13 +58,12 @@ class Orders(BaseOrders, Ui_Orders):
         return first_column_item.data(Qt.ItemDataRole.UserRole) if first_column_item else None
 
     def _open_order_edit_form(self, order_id):
-        """Открывает форму редактирования или добавления заказа (order_id=None — новый заказ)."""
         if self.edit_open:
-            QMessageBox.warning(self, "Предупреждение", "Закройте окно редактирования заказа.")
             return
         from App.OrderForm import OrderForm
         self.edit_open = True
         order_form_window = OrderForm(order_id, self)
+        order_form_window.setWindowModality(Qt.WindowModality.WindowModal)
         order_form_window.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose)
         order_form_window.destroyed.connect(lambda: setattr(self, "edit_open", False))
         order_form_window.accepted.connect(self._refresh_orders_table)
@@ -77,12 +74,11 @@ class Orders(BaseOrders, Ui_Orders):
         self._open_order_edit_form(None)
 
     def _on_cell_double_clicked(self, row_index, column_index):
-        """По двойному клику по строке открывает форму редактирования этого заказа."""
-        first_column_item = self.table.item(row_index, 0)
-        if first_column_item:
-            selected_order_id = first_column_item.data(Qt.ItemDataRole.UserRole)
-            if selected_order_id:
-                self._open_order_edit_form(selected_order_id)
+        item = self.table.item(row_index, 0)
+        if item:
+            order_id = item.data(Qt.ItemDataRole.UserRole)
+            if order_id:
+                self._open_order_edit_form(order_id)
 
     def _on_delete(self):
         """Удаляет выбранный заказ после подтверждения."""
@@ -90,15 +86,17 @@ class Orders(BaseOrders, Ui_Orders):
         if not selected_order_id:
             QMessageBox.warning(self, "Ошибка", "Выберите заказ.")
             return
-        if QMessageBox.question(
-            self, "Подтверждение", "Удалить заказ?",
-            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
-            QMessageBox.StandardButton.No
-        ) != QMessageBox.StandardButton.Yes:
+        box = QMessageBox(self)
+        box.setWindowTitle("Подтверждение")
+        box.setText("Удалить заказ?")
+        btn_yes = box.addButton("Да", QMessageBox.ButtonRole.YesRole)
+        btn_no = box.addButton("Нет", QMessageBox.ButtonRole.NoRole)
+        box.setDefaultButton(btn_no)
+        box.exec()
+        if box.clickedButton() != btn_yes:
             return
         try:
             delete_order(selected_order_id)
-            QMessageBox.information(self, "Готово", "Заказ удалён.")
             self._refresh_orders_table()
-        except Exception as delete_error:
-            QMessageBox.critical(self, "Ошибка", str(delete_error))
+        except Exception as error:
+            QMessageBox.critical(self, "Ошибка", str(error))

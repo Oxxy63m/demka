@@ -1,10 +1,4 @@
-# Логика входа: проверка логина/пароля в БД и возврат данных гостя.
-import os
-import sys
-
-_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-if _root not in sys.path:
-    sys.path.insert(0, _root)
+# Вход: проверка логина/пароля в БД, данные гостя.
 from App.db import auth_user
 
 

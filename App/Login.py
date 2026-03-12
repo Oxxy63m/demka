@@ -24,35 +24,28 @@ class Login(BaseLogin, Ui_Login):
         self._logo()
 
     def _logo(self):
-        """Показывает логотип на форме входа (файл icon.png из папки данных)."""
         if os.path.isfile(LOGIN_LOGO):
             px = QPixmap(LOGIN_LOGO)
             if not px.isNull():
                 self.lbl_logo.setPixmap(px.scaled(120, 120, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation))
 
     def _login(self):
-        """Проверяет логин и пароль в БД, при успехе закрывает окно с принятием (accept)."""
         log = self.login_edit.text().strip()
         pwd = self.password_edit.text().strip()
-        if not log:
-            QMessageBox.warning(self, "Ошибка", "Введите логин.")
-            return
         try:
-            u = do_login(log, pwd)
-        except Exception as e:
-            QMessageBox.critical(self, "Ошибка", str(e))
+            user = do_login(log, pwd)
+        except Exception as error:
+            QMessageBox.critical(self, "Ошибка", str(error))
             return
-        if not u:
+        if not user:
             QMessageBox.warning(self, "Ошибка", "Неверный логин или пароль.")
             return
-        self.user = u
+        self.user = user
         self.accept()
 
     def _guest(self):
-        """Вход без пароля: записывает пользователя «Гость» и закрывает окно с принятием."""
         self.user = get_guest_user()
         self.accept()
 
     def get_user(self):
-        """Возвращает данные вошедшего пользователя (словарь с full_name, role и т.д.) или гостя."""
         return self.user
