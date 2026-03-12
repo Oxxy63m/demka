@@ -96,11 +96,11 @@
 Порядок:
 1) Заполнить:
    - users,
-   - order_statuses (в DB.sql уже есть базовые значения),
+   - order_statuses (через CSV; статусов два: новый, завершён),
    - pickup_points.
 2) В orders.csv:
    - user_id         → id пользователя из users,
-   - status_id       → id статуса из order_statuses,
+   - status_id       → id статуса из order_statuses (1 = новый, 2 = завершён или как в вашем order_statuses.csv),
    - pickup_point_id → id пункта из pickup_points.
 
 pickup_code:
@@ -139,9 +139,9 @@ pickup_code:
 
 Удобный безопасный порядок (от независимых к зависимым):
 
-1) roles              (если нужно менять роли; иначе оставить как в DB.sql)
-2) order_statuses     (если нужны свои статусы; иначе оставить как в DB.sql)
-3) units              (единицы измерения — у нас достаточно одной: шт/Штуки)
+1) roles
+2) order_statuses     (два статуса: новый, завершён — заполнить через CSV)
+3) units
 4) suppliers
 5) manufacturers
 6) categories

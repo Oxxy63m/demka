@@ -1,4 +1,4 @@
-# Настройки приложения. Запуск — из корня проекта (main.py). ui/ и resources/ — относительно корня.
+# Настройки приложения. Запуск из корня (main.py).
 DATA_DIR = "resources"
 APP_ICON = "resources/icon.ico"
 
@@ -19,11 +19,6 @@ DB_CONFIG = {
     "user": "postgres",
     "password": "1234",
 }
-
-IMAGES_FOLDER = "product_images"
-IMAGE_MAX_WIDTH = 300
-IMAGE_MAX_HEIGHT = 200
-PLACEHOLDER_IMAGE = "picture.png"
 
 ROLE_GUEST = "guest"
 ROLE_CLIENT = "client"

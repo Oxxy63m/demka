@@ -31,12 +31,6 @@ class OrderForm(BaseOrderForm, Ui_OrderForm):
         self.order_date_edit.setDate(date.today())
         self.delivery_date_edit.setCalendarPopup(True)
         self.delivery_date_edit.setDate(date.today())
-        self.left_group.setStyleSheet(
-            "QGroupBox { font-weight: bold; background-color: #E8F5E9; border: 1px solid #2E8B57; border-radius: 4px; margin-top: 8px; padding-top: 8px; } QGroupBox::title { color: #2E8B57; }"
-        )
-        self.right_group.setStyleSheet(
-            "QGroupBox { font-weight: bold; background-color: #E3F2FD; border: 1px solid #ADD8E6; border-radius: 4px; margin-top: 8px; padding-top: 8px; } QGroupBox::title { color: #1976D2; }"
-        )
         if not self.is_edit:
             self.id_edit.setVisible(False)
             self.lbl_id.setVisible(False)

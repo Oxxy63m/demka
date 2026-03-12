@@ -1,46 +1,21 @@
-# Карточка одного товара в каталоге: фото, описание, цена, скидка, кнопки «В заказ» и «Удалить». Разметка — ui/product_item.ui.
+# Карточка товара в каталоге. Разметка — ui/product_item.ui.
 import os
 from PySide6.QtWidgets import QFrame, QMenu
 from PySide6.QtCore import Qt, Signal
-from PySide6.QtGui import QPixmap, QImage, QColor, QAction
+from PySide6.QtGui import QPixmap, QAction
 from PySide6.QtUiTools import loadUiType
 
-from App.config import UI, PLACEHOLDER_IMAGE, IMAGE_MAX_WIDTH, IMAGE_MAX_HEIGHT, DATA_DIR
+from App.config import UI
 
 Ui_Card, BaseCard = loadUiType(UI["card"])
 
 
-def _resolve_product_photo_path(photo_filename):
-    if not photo_filename:
-        return None
-    photo_filename = os.path.basename(str(photo_filename).strip())
-    folder = os.path.normpath(os.path.abspath(DATA_DIR))
-    if not os.path.isdir(folder):
-        return None
-    full_path = os.path.normpath(os.path.join(folder, photo_filename))
-    if os.path.isfile(full_path):
-        return full_path
-    try:
-        for name in os.listdir(folder):
-            if name.lower() == photo_filename.lower():
-                return os.path.normpath(os.path.join(folder, name))
-    except OSError:
-        pass
-    return None
-
-
-def _load_product_photo_pixmap(image_path, width=IMAGE_MAX_WIDTH, height=IMAGE_MAX_HEIGHT):
-    full_path = _resolve_product_photo_path(image_path) or _resolve_product_photo_path(PLACEHOLDER_IMAGE) or os.path.normpath(os.path.join(DATA_DIR, PLACEHOLDER_IMAGE))
-    pixmap = QPixmap(full_path)
+def _photo_pixmap(photo_filename, width=300, height=200):
+    path = os.path.join("resources", photo_filename or "picture.png")
+    pixmap = QPixmap(path)
     if pixmap.isNull():
-        image = QImage(full_path)
-        if not image.isNull():
-            pixmap = QPixmap.fromImage(image)
-    if not pixmap.isNull():
-        return pixmap.scaled(width, height, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation)
-    placeholder_pixmap = QPixmap(width, height)
-    placeholder_pixmap.fill(QColor(220, 220, 220))
-    return placeholder_pixmap
+        pixmap = QPixmap("resources/picture.png")
+    return pixmap.scaled(width, height, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation)
 
 
 STOCK_ZERO_BG = "#ADD8E6"
@@ -102,7 +77,7 @@ class Card(BaseCard, Ui_Card):
         discount_display = int(discount_percent) if discount_percent == int(discount_percent) else discount_percent
         self.discount_label.setText("Действующая скидка\n\n" + (f"{discount_display} %" if discount_percent else "—"))
         self.discount_label.setStyleSheet("font-weight: bold; padding: 8px; background: #f8f8f8;")
-        self.photo_label.setPixmap(_load_product_photo_pixmap(self.product.get("photo")))
+        self.photo_label.setPixmap(_photo_pixmap(self.product.get("photo")))
         self.photo_label.setStyleSheet("background: #f0f0f0;")
 
     def _apply_highlight(self):

@@ -5,7 +5,7 @@ from PySide6.QtWidgets import QApplication
 from PySide6.QtGui import QImage, QFont, QIcon
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from App.config import IMAGE_MAX_WIDTH, IMAGE_MAX_HEIGHT, PLACEHOLDER_IMAGE, DATA_DIR, APP_ICON
+from App.config import APP_ICON
 from App.Login import Login
 from App.Main import Main
 
@@ -14,11 +14,10 @@ BTN_H = 42
 
 
 def main():
-    """Создаёт плейсхолдер для фото при необходимости, запускает окно входа и главное окно каталога."""
-    ph_path = os.path.join(DATA_DIR, PLACEHOLDER_IMAGE)
+    ph_path = "resources/picture.png"
     if not os.path.isfile(ph_path):
-        os.makedirs(DATA_DIR, exist_ok=True)
-        img = QImage(IMAGE_MAX_WIDTH, IMAGE_MAX_HEIGHT, QImage.Format.Format_RGB32)
+        os.makedirs("resources", exist_ok=True)
+        img = QImage(300, 200, QImage.Format.Format_RGB32)
         img.fill(0xFFC0C0C0)
         img.save(ph_path)
 

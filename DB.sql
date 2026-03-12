@@ -72,7 +72,3 @@ CREATE TABLE order_items (
     unit_price NUMERIC(10, 2) NOT NULL CHECK (unit_price >= 0),
     CONSTRAINT uq_order_product UNIQUE (order_id, product_id)
 );
--- Начальные данные
-INSERT INTO roles (role_name) VALUES ('guest'), ('client'), ('manager'), ('administrator');
-INSERT INTO order_statuses (status_name) VALUES ('новый'), ('в обработке'), ('доставляется'), ('выполнен'), ('отменён');
-INSERT INTO units (unit_name) VALUES ('Штуки');

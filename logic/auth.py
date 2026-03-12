@@ -8,5 +8,5 @@ def login(login_text, password):
 
 
 def get_guest_user():
-    """Возвращает словарь с данными пользователя «Гость» (full_name, role)."""
-    return {"full_name": "Гость", "role": "guest"}
+    """Возвращает словарь с данными пользователя «Гость». role_id = 1."""
+    return {"full_name": "Гость", "role": "guest", "role_name": "guest", "role_id": 1}
