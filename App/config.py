@@ -1,7 +1,6 @@
 # Настройки приложения. Запуск — из корня проекта (main.py). ui/ и resources/ — относительно корня.
 DATA_DIR = "resources"
 APP_ICON = "resources/icon.ico"
-LOGIN_LOGO = "resources/icon.png"
 
 UI = {
     "login": "ui/login.ui",
