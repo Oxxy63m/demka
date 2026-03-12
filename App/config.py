@@ -1,28 +1,24 @@
-# Настройки приложения: папка ресурсов относительно проекта, пути к интерфейсам, параметры БД.
-import os
-
-ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-# Все ресурсы (иконки, плейсхолдер, фото товаров, Excel для импорта) — в папке resources в проекте.
-DATA_DIR = os.path.join(ROOT, "resources")
-APP_ICON = os.path.join(DATA_DIR, "icon.ico")
-LOGIN_LOGO = os.path.join(DATA_DIR, "icon.png")
+# Настройки приложения. Запуск — из корня проекта (main.py). ui/ и resources/ — относительно корня.
+DATA_DIR = "resources"
+APP_ICON = "resources/icon.ico"
+LOGIN_LOGO = "resources/icon.png"
 
 UI = {
-    "login": os.path.join(ROOT, "ui", "login.ui"),
-    "main": os.path.join(ROOT, "ui", "main.ui"),
-    "orders": os.path.join(ROOT, "ui", "orders_list.ui"),
-    "order": os.path.join(ROOT, "ui", "order_form.ui"),
-    "prod": os.path.join(ROOT, "ui", "product_form.ui"),
-    "card": os.path.join(ROOT, "ui", "product_item.ui"),
-    "cart": os.path.join(ROOT, "ui", "cart.ui"),
+    "login": "ui/login.ui",
+    "main": "ui/main.ui",
+    "orders": "ui/orders_list.ui",
+    "order": "ui/order_form.ui",
+    "prod": "ui/product_form.ui",
+    "card": "ui/product_item.ui",
+    "cart": "ui/cart.ui",
 }
 
 DB_CONFIG = {
-    "host": os.environ.get("DB_HOST", "localhost"),
-    "port": int(os.environ.get("DB_PORT", "5432")),
-    "database": os.environ.get("DB_NAME", "demka"),
-    "user": os.environ.get("DB_USER", "postgres"),
-    "password": os.environ.get("DB_PASSWORD", "1234"),
+    "host": "localhost",
+    "port": 5432,
+    "database": "demka",
+    "user": "postgres",
+    "password": "1234",
 }
 
 IMAGES_FOLDER = "product_images"
