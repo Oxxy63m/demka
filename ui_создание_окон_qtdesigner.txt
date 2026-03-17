@@ -27,6 +27,11 @@
    - после добавления проверяйте порядок в Object Inspector (сверху вниз/слева направо),
    - если порядок не тот — перетащите виджет выше/ниже в Object Inspector.
 
+9) Важно про layout’ы:
+   - Тип layout (сетка/вертикаль/горизонталь/2 столбца) можно выбирать как удобно.
+   - Главное, чтобы на форме были НУЖНЫЕ ВИДЖЕТЫ и их `objectName` совпадали с кодом.
+   - Поэтому после каждого окна есть блок «ПРОВЕРЬ ПЕРЕД СОХРАНЕНИЕМ».
+
 ПОРЯДОК СОЗДАНИЯ ФАЙЛОВ
 1) `ui/login.ui`
 2) `ui/main.ui`
@@ -89,6 +94,16 @@
     - первая: objectName `btn_login`, text `Войти`
     - вторая: objectName `btn_guest`, text `Войти как гость`
 13. Save As → `ui/login.ui`.
+ПРОВЕРЬ ПЕРЕД СОХРАНЕНИЕМ (`ui/login.ui`):
+- Корень (QDialog): objectName `LoginWindow`, windowTitle `Вход в систему`, minimumSize 440×320
+- Label: `lbl_logo`
+- Label: `lbl_title`
+- Label: `lbl_login`
+- Line Edit: `login_edit`
+- Label: `lbl_password`
+- Line Edit: `password_edit` (echoMode Password)
+- Push Button: `btn_login`
+- Push Button: `btn_guest`
 
 ========================================
 2) `ui/main.ui`
@@ -161,6 +176,23 @@
 20. Теперь выделите ВЕСЬ centralWidget (Object Inspector → `centralwidget`) → ПКМ → Компоновка → Скомпоновать по вертикали.
     (Если пункты серые — выделите все элементы внутри centralWidget (Ctrl+A) и сделайте «Скомпоновать по вертикали».)
 21. Save As → `ui/main.ui`.
+ПРОВЕРЬ ПЕРЕД СОХРАНЕНИЕМ (`ui/main.ui`):
+- Корень (QMainWindow): objectName `ProductListWindow`, windowTitle `Список товаров`, minimumSize 800×500
+- Label: `lbl_title`
+- Push Button: `btn_orders`
+- Push Button: `btn_cart`
+- Push Button: `btn_logout`
+- Label: `lbl_user`
+- Label: `lbl_search`
+- Line Edit: `search_edit`
+- Label: `lbl_supplier`
+- Combo Box: `supplier_combo`
+- Label: `lbl_sort`
+- Combo Box: `sort_combo`
+- Push Button: `btn_add`
+- Scroll Area: `cards_scroll`
+- Внутри Scroll Area: `cards_container`
+- Layout внутри `cards_container`: objectName `cards_layout`, alignment AlignTop
 
 ========================================
 3) `ui/product_item.ui`
@@ -228,6 +260,16 @@
    - objectName: `btn_delete`
    - text: `Удалить`
 20. Save As → `ui/product_item.ui`.
+ПРОВЕРЬ ПЕРЕД СОХРАНЕНИЕМ (`ui/product_item.ui`):
+- Корень (QFrame): objectName `ProductCard`, frameShape Box, lineWidth 1
+- Label (фото): `photo_label`
+- Scroll Area (центр): `scroll_center` (NoFrame, AlwaysOff по горизонтали)
+- Внутренний виджет: `center_widget`
+- Layout внутри `center_widget`: `center_layout` (spacing 0, margins 4/2/4/2)
+- Labels в центре: `lbl_header`, `lbl_desc_title`, `lbl_desc`, `lbl_manufacturer`, `lbl_supplier`, `lbl_price`, `lbl_unit`, `lbl_stock`
+- Правая колонка: `right_column`, layout `vl_actions`
+- Label (скидка): `discount_label`
+- Buttons: `btn_order`, `btn_delete`
 
 ========================================
 4) `ui/cart.ui`
@@ -298,6 +340,15 @@
    - btn_cancel: text `Назад`
    - btn_confirm: text `Оформить`
 13. Save As → `ui/cart.ui`.
+ПРОВЕРЬ ПЕРЕД СОХРАНЕНИЕМ (`ui/cart.ui`):
+- Корень (QDialog): objectName `CartDialog`, windowTitle `Оформление заказа`, minimumSize 720×480
+- Label: `lbl_title`
+- Table Widget: `table_items` (4 колонки: Товар, Кол-во, Цена, Сумма)
+- Combo Box: `cb_pickup`
+- Date Edit: `de_delivery` (calendarPopup true)
+- Label: `lbl_total_title`
+- Label: `lbl_total` (например `0.00 ₽`)
+- Buttons: `btn_remove`, `btn_cancel`, `btn_confirm`
 
 ========================================
 5) `ui/orders_list.ui`
@@ -306,17 +357,24 @@
 2. Свойства окна:
    - objectName: `OrderListWindow`
    - windowTitle: `Заказы`
-3. Выделите centralWidget → Lay Out Vertically.
+3. Добавьте виджеты на форму (пока без компоновки):
+   - Шапка: Label, PushButton, Horizontal Spacer, Label
+   - Кнопки: PushButton, PushButton
+   - Table Widget
+4. Компоновка:
+   - выделите 4 виджета шапки → ПКМ → Компоновка → Скомпоновать по горизонтали
+   - выделите 2 кнопки → ПКМ → Компоновка → Скомпоновать по горизонтали
+   - выделите все 3 блока (шапка, кнопки, таблица) → ПКМ → Компоновка → Скомпоновать по вертикали
 
 Шапка:
-4. Добавьте: QLabel, PushButton, Horizontal Spacer, QLabel → выделите → Lay Out Horizontally.
+5. Настройте шапку:
 5. Свойства:
    - lbl_title: text `Заказы`, wordWrap true
    - btn_back: text `Назад`
    - lbl_user: text `Гость`, wordWrap true
 
 Кнопки:
-6. Добавьте: PushButton, PushButton → выделите → Lay Out Horizontally.
+6. Настройте кнопки:
 7. Свойства:
    - btn_add: text `Добавить заказ`
    - btn_del: text `Удалить заказ`
@@ -333,6 +391,14 @@
      5) `Дата доставки`
      6) `Клиент`
 9. Save As → `ui/orders_list.ui`.
+ПРОВЕРЬ ПЕРЕД СОХРАНЕНИЕМ (`ui/orders_list.ui`):
+- Корень (QMainWindow): objectName `OrderListWindow`, windowTitle `Заказы`
+- Label: `lbl_title`
+- Push Button: `btn_back`
+- Label: `lbl_user`
+- Push Button: `btn_add`
+- Push Button: `btn_del`
+- Table Widget: `table` (6 колонок: Артикул заказа, Статус заказа, Адрес пункта выдачи, Дата заказа, Дата доставки, Клиент)
 
 ========================================
 6) `ui/order_form.ui`
@@ -374,6 +440,13 @@
    - btn_save: text `Сохранить`
    - btn_cancel: text `Отмена`
 14. Save As → `ui/order_form.ui`.
+ПРОВЕРЬ ПЕРЕД СОХРАНЕНИЕМ (`ui/order_form.ui`):
+- Корень (QDialog): objectName `OrderEditWindow`, windowTitle `Заказ`, minimumSize 520×420
+- Group Box: `left_group`, title `Данные заказа`
+- В `left_group` должны быть: `lbl_id`, `id_edit` (readOnly), `lbl_article`, `article_edit`, `lbl_status`, `status_combo`, `lbl_pickup`, `pickup_edit`, `lbl_order_date`, `order_date_edit`, `lbl_user`, `user_combo`
+- Group Box: `right_group`, title `Доставка`
+- В `right_group` должны быть: `lbl_delivery`, `delivery_date_edit`
+- Buttons: `btn_save`, `btn_cancel`
 
 ========================================
 7) `ui/product_form.ui`
@@ -429,4 +502,13 @@
     - btn_save: text `Сохранить`
     - btn_cancel: text `Отмена`
 17. Save As → `ui/product_form.ui`.
+ПРОВЕРЬ ПЕРЕД СОХРАНЕНИЕМ (`ui/product_form.ui`):
+- Корень (QDialog): objectName `ProductEditWindow`, windowTitle `Товар`, minimumSize 560×520
+- Group Box: `data_group`, title `Данные товара`
+- ID: `lbl_id`, `id_edit` (readOnly)
+- Фото: `photo_group`, внутри `photo_label`, `btn_photo`
+- Поля: `lbl_article`+`article_edit`, `lbl_name`+`name_edit`, `lbl_category`+`category_combo`, `lbl_desc`+`desc_edit`,
+        `lbl_manuf`+`manuf_combo`, `lbl_supp`+`supp_edit`, `lbl_price`+`price_spin`, `lbl_unit`+`unit_edit`,
+        `lbl_qty`+`qty_spin`, `lbl_discount`+`discount_spin`
+- Buttons: `btn_save`, `btn_cancel`
 
