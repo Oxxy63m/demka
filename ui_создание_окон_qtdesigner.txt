@@ -9,6 +9,41 @@
 6) order_form.ui  — диалог «Заказ»
 7) product_form.ui — диалог «Товар»
 
+ВАЖНО ПРО QT DESIGNER (ПОЧЕМУ НЕТ «QVBoxLayout» В ПАНЕЛИ ВИДЖЕТОВ)
+
+Layout’ы (Vertical/Horizontal/Grid/Form) — это не «виджеты», их не нужно искать как отдельный объект.
+В Qt Designer они применяются к выбранным виджетам/областям через команды разметки.
+
+Как ПРАВИЛЬНО поставить layout:
+1) Добавьте контейнер (обычно это centralWidget у MainWindow или сам QDialog).
+2) Выделите мышкой нужную область:
+   - либо сам контейнер (клик по пустому месту внутри),
+   - либо несколько виджетов (обведите мышкой / Shift+клик).
+3) Примените разметку одним из способов:
+   - ПКМ → Lay out → Lay Out Vertically / Lay Out Horizontally / Lay Out in a Grid / Lay Out in a Form
+   - или кнопки разметки на верхней панели (иконки layout)
+   - или меню Form → Lay Out Vertically / Horizontally / Grid / Form
+4) Если «не ставится layout», обычно уже есть layout. Тогда:
+   - выделите контейнер
+   - ПКМ → Lay out → Break Layout
+   - и потом снова назначьте нужный layout.
+
+Как добавить Spacer (растяжку):
+1) В панели виджетов: Spacers → Horizontal Spacer или Vertical Spacer.
+2) Перетащите spacer в нужный layout (например, между кнопками и правым блоком).
+3) В свойствах spacer можно менять sizeHint (обычно не нужно).
+
+Как переименовать элементы (objectName):
+1) Выберите элемент.
+2) В Property Editor найдите свойство objectName и задайте точно как в инструкции.
+   Это КРИТИЧНО: код ищет элементы по objectName.
+
+Термины в методичке ниже:
+- «Вертикальный layout» = команда Lay Out Vertically (аналог QVBoxLayout)
+- «Горизонтальный layout» = Lay Out Horizontally (аналог QHBoxLayout)
+- «Form layout» = Lay Out in a Form (аналог QFormLayout)
+- «Grid layout» = Lay Out in a Grid (аналог QGridLayout)
+
 Ниже для каждого окна: параметры виджетов и блок «РАСПОЛОЖЕНИЕ И ВНЕШНИЙ ВИД» — как добиться того же расположения и вида, что в текущем проекте (порядок элементов, спейсеры, размеры, группы, рамки).
 
 ДАЛЬШЕ — КРАТКО, КАК СОЗДАВАТЬ КАЖДОЕ ОКНО.
@@ -16,7 +51,9 @@
 1. login.ui (окно входа)
 1.1. В Qt Designer: File → New → Dialog with Buttons Bottom (или просто Dialog).
 1.2. В Object Inspector убедиться, что корневой объект называется «Dialog», потом в свойствах задать objectName: LoginDialog (имя произвольное, главное — понятно).
-1.3. Добавить QVBoxLayout на всё окно.
+1.3. Поставить ВЕРТИКАЛЬНЫЙ layout на всё окно:
+     - кликнуть внутри пустого места диалога (чтобы выделился QDialog),
+     - ПКМ → Lay out → Lay Out Vertically.
 1.4. В верхней части добавить QLabel для логотипа:
      - objectName: lbl_logo
      - text: удалить (пусто)
@@ -58,7 +95,9 @@
 2.2. В свойствах задать:
      - objectName: MainWindow
      - windowTitle: «Список товаров»
-2.3. Установить центральный виджет (centralWidget) и задать ему вертикальный QVBoxLayout.
+2.3. Установить центральный виджет (centralWidget) и поставить на него ВЕРТИКАЛЬНЫЙ layout:
+     - кликнуть по centralWidget,
+     - ПКМ → Lay out → Lay Out Vertically.
 2.4. Вверху добавить QHBoxLayout с элементами:
      - QLabel «Список товаров»:
        * objectName: lbl_title
@@ -121,7 +160,9 @@
 3.1. File → New → Widget.
 3.2. Корневой виджет: QWidget, objectName: ProductItem (или Card).
      - sizePolicy: Preferred / Fixed по высоте (можно minimumHeight около 220–240)
-3.3. Установить горизонтальный QHBoxLayout.
+3.3. Поставить ГОРИЗОНТАЛЬНЫЙ layout на корневой виджет:
+     - кликнуть по пустому месту внутри виджета,
+     - ПКМ → Lay out → Lay Out Horizontally.
 3.4. Слева добавить QLabel для фото:
      - objectName: lbl_photo
      - minimumSize: 300×200
@@ -174,7 +215,9 @@
 4.2. Корневой объект: QDialog, objectName: CartDialog.
      - windowTitle: «Корзина»
      - size: примерно 700×500
-4.3. Установить вертикальный QVBoxLayout.
+4.3. Поставить ВЕРТИКАЛЬНЫЙ layout на QDialog:
+     - кликнуть внутри пустого места диалога,
+     - ПКМ → Lay out → Lay Out Vertically.
 4.4. Вверху добавить QLabel «Корзина»:
      - objectName: lbl_title
      - text: «Корзина»
@@ -229,7 +272,7 @@
 5.2. Корневой объект: QMainWindow или QDialog, objectName: OrdersWindow.
      - windowTitle: «Заказы»
 5.3. Если это MainWindow:
-     - В centralWidget установить вертикальный QVBoxLayout.
+     - В centralWidget поставить ВЕРТИКАЛЬНЫЙ layout (Lay Out Vertically).
 5.4. Вверху:
      - QLabel «Заказы»:
        * objectName: lbl_title
@@ -266,7 +309,8 @@
 6.2. Корневой объект: QDialog, objectName: OrderFormDialog.
      - windowTitle: «Заказ»
      - size: примерно 500×400
-6.3. Установить QFormLayout или QVBoxLayout.
+6.3. Поставить ВЕРТИКАЛЬНЫЙ layout на диалог (Lay Out Vertically).
+     Дальше внутри добавлять GroupBox и уже внутри них ставить Form layout (Lay Out in a Form).
 6.4. Поля формы (примерный состав):
      - QLineEdit «Номер заказа»:
        * objectName: edit_order_id
@@ -307,7 +351,11 @@
 7.2. Корневой объект: QDialog, objectName: ProductFormDialog.
      - windowTitle: «Товар»
      - size: примерно 700×500
-7.3. Основной layout: QHBoxLayout (слева фото, справа поля) или QVBoxLayout с группами.
+7.3. Поставить ВЕРТИКАЛЬНЫЙ layout на диалог (Lay Out Vertically).
+     Дальше внутри групп (GroupBox) ставить нужные layout’ы:
+     - для строки ID: Horizontal layout (Lay Out Horizontally),
+     - для формы полей: Form layout (Lay Out in a Form),
+     - для фото-блока: Vertical layout (Lay Out Vertically).
 7.4. Слева:
      - QLabel для фото:
        * objectName: lbl_photo
