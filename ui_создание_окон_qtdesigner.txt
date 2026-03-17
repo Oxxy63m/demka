@@ -1,423 +1,353 @@
-ПОСЛЕДОВАТЕЛЬНОСТЬ СОЗДАНИЯ ОКОН В QT DESIGNER
+МЕТОДИЧКА: КАК С НУЛЯ СДЕЛАТЬ ТОЧНО ТАКОЙ ЖЕ UI В QT DESIGNER (ПОШАГОВО)
 
-Файлы ui по порядку:
-1) login.ui  — окно входа
-2) main.ui   — главное окно со списком товаров
-3) product_item.ui — карточка товара (виджет)
-4) cart.ui   — диалог «Корзина»
-5) orders_list.ui — окно списка заказов
-6) order_form.ui  — диалог «Заказ»
-7) product_form.ui — диалог «Товар»
+Правила (выполняйте строго):
+1) В Designer НЕТ «QVBoxLayout/QHBoxLayout» как виджетов. Используйте Layouts:
+   - Vertical layout, Horizontal layout, Grid layout, Form layout.
+2) Layout ставится так: выделили область/виджеты → ПКМ → Lay out → нужный layout.
+3) Если layout не ставится: ПКМ → Lay out → Break Layout → поставить заново.
+4) Имена (objectName) задавайте ТОЧНО как ниже (Property Editor → objectName).
+5) Файлы сохраняйте ТОЧНО по путям: папка `ui`, имена как ниже.
 
-ВАЖНО ПРО QT DESIGNER (ПОЧЕМУ НЕТ «QVBoxLayout» В ПАНЕЛИ ВИДЖЕТОВ)
+ПОРЯДОК СОЗДАНИЯ ФАЙЛОВ
+1) `ui/login.ui`
+2) `ui/main.ui`
+3) `ui/product_item.ui`
+4) `ui/cart.ui`
+5) `ui/orders_list.ui`
+6) `ui/order_form.ui`
+7) `ui/product_form.ui`
 
-Layout’ы (Vertical/Horizontal/Grid/Form) — это не «виджеты», их не нужно искать как отдельный объект.
-В Qt Designer они применяются к выбранным виджетам/областям через команды разметки.
+========================================
+1) `ui/login.ui`
+========================================
+1. File → New → Dialog.
+2. Выделите диалог (клик по пустому месту) → ПКМ → Lay out → Lay Out Vertically.
+3. Выделите диалог и задайте свойства:
+   - objectName: `LoginWindow`
+   - windowTitle: `Вход в систему`
+   - minimumSize: width 440, height 320
+4. Добавьте QLabel (Display Widgets → Label). Поставьте самым верхним.
+   - objectName: `lbl_logo`
+   - minimumSize: 120×120
+   - maximumSize: 150×150
+   - scaledContents: true
+   - alignment: AlignCenter
+   - text: очистить (пусто)
+   В Object Inspector: выделите item этого QLabel в layout → alignment: AlignHCenter.
+5. Добавьте QLabel:
+   - objectName: `lbl_title`
+   - text: `Авторизация`
+   - alignment: AlignCenter
+   - wordWrap: true
+6. Добавьте QLabel:
+   - objectName: `lbl_login`
+   - text: `Логин:`
+   - wordWrap: true
+7. Добавьте QLineEdit (Input Widgets → Line Edit):
+   - objectName: `login_edit`
+   - placeholderText: `Введите логин`
+8. Добавьте QLabel:
+   - objectName: `lbl_password`
+   - text: `Пароль:`
+   - wordWrap: true
+9. Добавьте QLineEdit:
+   - objectName: `password_edit`
+   - echoMode: Password
+   - placeholderText: `Введите пароль`
+10. Добавьте 2 кнопки в один ряд:
+   10.1 Добавьте 2 QPushButton (Buttons → Push Button) подряд внизу.
+   10.2 Выделите ОБЕ кнопки → ПКМ → Lay out → Lay Out Horizontally.
+   10.3 Задайте свойства кнопок:
+       - первая: objectName `btn_login`, text `Войти`
+       - вторая: objectName `btn_guest`, text `Войти как гость`
+11. Save As → `ui/login.ui`.
 
-Как ПРАВИЛЬНО поставить layout:
-1) Добавьте контейнер (обычно это centralWidget у MainWindow или сам QDialog).
-2) Выделите мышкой нужную область:
-   - либо сам контейнер (клик по пустому месту внутри),
-   - либо несколько виджетов (обведите мышкой / Shift+клик).
-3) Примените разметку одним из способов:
-   - ПКМ → Lay out → Lay Out Vertically / Lay Out Horizontally / Lay Out in a Grid / Lay Out in a Form
-   - или кнопки разметки на верхней панели (иконки layout)
-   - или меню Form → Lay Out Vertically / Horizontally / Grid / Form
-4) Если «не ставится layout», обычно уже есть layout. Тогда:
-   - выделите контейнер
-   - ПКМ → Lay out → Break Layout
-   - и потом снова назначьте нужный layout.
+========================================
+2) `ui/main.ui`
+========================================
+1. File → New → Main Window.
+2. Выделите окно и задайте свойства:
+   - objectName: `ProductListWindow`
+   - windowTitle: `Список товаров`
+   - minimumSize: 800×500
+3. Выделите centralWidget → ПКМ → Lay out → Lay Out Vertically.
 
-Как добавить Spacer (растяжку):
-1) В панели виджетов: Spacers → Horizontal Spacer или Vertical Spacer.
-2) Перетащите spacer в нужный layout (например, между кнопками и правым блоком).
-3) В свойствах spacer можно менять sizeHint (обычно не нужно).
+Шапка (одна строка):
+4. Добавьте в centralWidget: QLabel, QPushButton, QPushButton, QPushButton, Horizontal Spacer, QLabel (именно в этом порядке).
+5. Выделите эти 6 элементов → ПКМ → Lay out → Lay Out Horizontally.
+6. Задайте свойства:
+   - QLabel: objectName `lbl_title`, text `Список товаров`, wordWrap true
+   - QPushButton: objectName `btn_orders`, text `Заказы`
+   - QPushButton: objectName `btn_cart`, text `Заказ`
+   - QPushButton: objectName `btn_logout`, text `Выход`
+   - Spacer: оставить как есть
+   - QLabel: objectName `lbl_user`, text `Гость`, wordWrap true
 
-Как переименовать элементы (objectName):
-1) Выберите элемент.
-2) В Property Editor найдите свойство objectName и задайте точно как в инструкции.
-   Это КРИТИЧНО: код ищет элементы по objectName.
+Строка фильтров (одна строка):
+7. Добавьте: QLabel, QLineEdit, QLabel, QComboBox, QLabel, QComboBox (в этом порядке).
+8. Выделите 6 элементов → ПКМ → Lay out → Lay Out Horizontally.
+9. Свойства:
+   - lbl_search: text `Поиск:`, wordWrap true
+   - search_edit: placeholderText `Поиск по названию, артикулу...`
+   - lbl_supplier: text `Поставщик:`, wordWrap true
+   - supplier_combo: objectName `supplier_combo`
+   - lbl_sort: text `Сортировка по количеству:`, wordWrap true
+   - sort_combo: objectName `sort_combo`
+   Не забудьте objectName у QLabel: `lbl_search`, `lbl_supplier`, `lbl_sort`.
 
-Термины в методичке ниже:
-- «Вертикальный layout» = команда Lay Out Vertically (аналог QVBoxLayout)
-- «Горизонтальный layout» = Lay Out Horizontally (аналог QHBoxLayout)
-- «Form layout» = Lay Out in a Form (аналог QFormLayout)
-- «Grid layout» = Lay Out in a Grid (аналог QGridLayout)
+Строка с кнопкой добавления:
+10. Добавьте QPushButton.
+11. Выделите кнопку → ПКМ → Lay out → Lay Out Horizontally.
+12. Свойства: objectName `btn_add`, text `Добавить товар`.
 
-Ниже для каждого окна: параметры виджетов и блок «РАСПОЛОЖЕНИЕ И ВНЕШНИЙ ВИД» — как добиться того же расположения и вида, что в текущем проекте (порядок элементов, спейсеры, размеры, группы, рамки).
+Список карточек:
+13. Добавьте Scroll Area (Containers → Scroll Area).
+14. Свойства Scroll Area:
+    - objectName: `cards_scroll`
+    - widgetResizable: true
+    - horizontalScrollBarPolicy: ScrollBarAlwaysOff
+15. Кликните по внутреннему виджету Scroll Area (контейнер внутри) и задайте:
+    - objectName: `cards_container`
+16. Выделите `cards_container` → ПКМ → Lay out → Lay Out Vertically.
+17. В Object Inspector выделите layout внутри `cards_container` и задайте:
+    - objectName: `cards_layout`
+    - alignment: AlignTop
+18. Save As → `ui/main.ui`.
 
-ДАЛЬШЕ — КРАТКО, КАК СОЗДАВАТЬ КАЖДОЕ ОКНО.
+========================================
+3) `ui/product_item.ui`
+========================================
+1. File → New → Widget.
+2. В Object Inspector выберите корневой виджет и в свойствах смените class на Frame (Containers → Frame) ИЛИ создайте Frame и сделайте его корнем (проще: сразу File → New → Widget, затем в Object Inspector заменить QWidget на QFrame через Promote/пересоздание). В итоге корень должен быть Frame.
+3. Свойства корневого Frame:
+   - objectName: `ProductCard`
+   - minimumSize: width 400, height 200
+   - frameShape: Box
+   - lineWidth: 1
+4. Выделите Frame → ПКМ → Lay out → Lay Out Horizontally.
 
-1. login.ui (окно входа)
-1.1. В Qt Designer: File → New → Dialog with Buttons Bottom (или просто Dialog).
-1.2. В Object Inspector убедиться, что корневой объект называется «Dialog», потом в свойствах задать objectName: LoginDialog (имя произвольное, главное — понятно).
-1.3. Поставить ВЕРТИКАЛЬНЫЙ layout на всё окно:
-     - кликнуть внутри пустого места диалога (чтобы выделился QDialog),
-     - ПКМ → Lay out → Lay Out Vertically.
-1.4. В верхней части добавить QLabel для логотипа:
-     - objectName: lbl_logo
-     - text: удалить (пусто)
-     - alignment: AlignHCenter
-1.5. Под ним добавить QFormLayout или вертикальный layout:
-     - QLineEdit для логина:
-       * objectName: login_edit
-       * placeholderText: «Логин»
-     - QLineEdit для пароля:
-       * objectName: password_edit
-       * placeholderText: «Пароль»
-       * Echo mode: Password
-1.6. Внизу добавить горизонтальный layout с кнопками:
-     - QPushButton «Войти»:
-       * objectName: btn_login
-       * text: «Войти»
-       * default: true
-     - QPushButton «Войти как гость»:
-       * objectName: btn_guest
-       * text: «Войти как гость»
-1.7. В свойствах диалога:
-     - windowTitle: «Вход в систему»
-     - size: примерно 400×250
-1.8. Сохранить как ui/login.ui.
+Левая колонка (фото):
+5. Добавьте QLabel.
+6. Свойства:
+   - objectName: `photo_label`
+   - minimumSize: 300×200
+   - alignment: AlignCenter
 
-1.9. РАСПОЛОЖЕНИЕ И ВНЕШНИЙ ВИД (как в проекте):
-     — Один вертикальный layout на всё окно (QVBoxLayout).
-     — Порядок сверху вниз:
-       1) QLabel логотипа — выровнять по центру по горизонтали (alignment для item: Qt::AlignHCenter).
-          Размеры: minimumSize 120×120, maximumSize 150×150; scaledContents: true; alignment виджета: AlignCenter.
-       2) QLabel «Авторизация» — по центру (alignment: Qt::AlignCenter), wordWrap: true.
-       3) QLabel «Логин:», затем QLineEdit логина.
-       4) QLabel «Пароль:», затем QLineEdit пароля.
-       5) Горизонтальный layout с двумя кнопками «Войти» и «Войти как гость» (рядом).
-     — Окно: geometry/minimumSize 440×320. Подписи полей можно оформить отдельными QLabel над каждым полем.
+Центральная колонка (текст с прокруткой):
+7. Добавьте Scroll Area.
+8. Свойства Scroll Area:
+   - objectName: `scroll_center`
+   - widgetResizable: true
+   - frameShape: NoFrame
+   - horizontalScrollBarPolicy: ScrollBarAlwaysOff
+9. Внутренний виджет scroll area:
+   - objectName: `center_widget`
+10. Выделите `center_widget` → ПКМ → Lay out → Lay Out Vertically.
+11. Выделите layout внутри `center_widget` и задайте:
+   - objectName: `center_layout`
+   - spacing: 0
+   - leftMargin: 4, topMargin: 2, rightMargin: 4, bottomMargin: 2
+12. Внутрь `center_widget` добавьте QLabel (в таком порядке), у всех включите wordWrap true:
+   - `lbl_header`
+   - `lbl_desc_title`
+   - `lbl_desc`
+   - `lbl_manufacturer`
+   - `lbl_supplier`
+   - `lbl_price`
+   - `lbl_unit`
+   - `lbl_stock`
 
-2. main.ui (главное окно со списком товаров)
-2.1. File → New → Main Window.
-2.2. В свойствах задать:
-     - objectName: MainWindow
-     - windowTitle: «Список товаров»
-2.3. Установить центральный виджет (centralWidget) и поставить на него ВЕРТИКАЛЬНЫЙ layout:
-     - кликнуть по centralWidget,
-     - ПКМ → Lay out → Lay Out Vertically.
-2.4. Вверху добавить QHBoxLayout с элементами:
-     - QLabel «Список товаров»:
-       * objectName: lbl_title
-       * text: «Список товаров»
-       * font: жирный, размер можно 18 pt
-     - QLabel для ФИО пользователя:
-       * objectName: lbl_user
-       * text: «Гость»
-       * wordWrap: true
-2.5. Ниже добавить QHBoxLayout для поиска и фильтров:
-     - QLabel «Поиск»:
-       * objectName: lbl_search
-       * text: «Поиск»
-     - QLineEdit:
-       * objectName: search_edit
-       * placeholderText: «Введите название товара»
-     - QLabel «Поставщик»:
-       * objectName: lbl_supplier
-       * text: «Поставщик»
-     - QComboBox:
-       * objectName: supplier_combo
-       * editable: false
-     - QLabel «Сортировка»:
-       * objectName: lbl_sort
-       * text: «Сортировка»
-     - QComboBox:
-       * objectName: sort_combo
-       * editable: false
-2.6. Ниже добавить QScrollArea:
-     - objectName: cards_scroll
-     - widgetResizable: true
-     - frameShape: NoFrame (по желанию)
-     - Внутри scrollAreaWidgetContents:
-       * задать вертикальный layout
-       * objectName этого layout: cards_layout
-2.7. Внизу добавить QHBoxLayout для кнопок:
-     - QPushButton «Заказы»:
-       * objectName: btn_orders
-       * text: «Заказы»
-     - QPushButton «Добавить»:
-       * objectName: btn_add
-       * text: «Добавить»
-     - QPushButton «Корзина»:
-       * objectName: btn_cart
-       * text: «Корзина»
-     - QPushButton «Выход»:
-       * objectName: btn_logout
-       * text: «Выход»
-2.8. Сохранить как ui/main.ui.
+Правая колонка (скидка и кнопки):
+13. Добавьте Widget (Containers → Widget).
+14. Свойства:
+   - objectName: `right_column`
+   - minimumSize: width 180, height 0
+15. Выделите right_column → ПКМ → Lay out → Lay Out Vertically.
+16. Выделите layout внутри right_column и задайте objectName: `vl_actions`.
+17. Добавьте QLabel:
+   - objectName: `discount_label`
+   - minimumSize: 160×50
+   - alignment: AlignCenter
+   - wordWrap: true
+18. Добавьте QPushButton:
+   - objectName: `btn_order`
+   - text: `В заказ`
+19. Добавьте QPushButton:
+   - objectName: `btn_delete`
+   - text: `Удалить`
+20. Save As → `ui/product_item.ui`.
 
-2.9. РАСПОЛОЖЕНИЕ И ВНЕШНИЙ ВИД (как в проекте):
-     — centralWidget с одним вертикальным layout (QVBoxLayout).
-     — Верхняя строка (QHBoxLayout, имя head): слева направо — lbl_title «Список товаров», кнопки «Заказы», «Заказ», «Выход», затем Horizontal Spacer (sizeHint 40×20), затем lbl_user «Гость». Spacer прижимает ФИО вправо.
-     — Вторая строка (QHBoxLayout, row_filter): «Поиск:» (lbl_search), search_edit (placeholder «Поиск по названию, артикулу...»), «Поставщик:», supplier_combo, «Сортировка по количеству:», sort_combo — всё в одну линию.
-     — Третья строка (QHBoxLayout, row_buttons): одна кнопка «Добавить товар» (btn_add).
-     — Четвёртый элемент — QScrollArea (cards_scroll): widgetResizable: true, horizontalScrollBarPolicy: ScrollBarAlwaysOff. Внутри — виджет cards_container с вертикальным layout cards_layout, alignment: AlignTop (карточки прижаты к верху). Этот layout заполняется кодом.
-     — Окно: minimumSize 800×500.
+========================================
+4) `ui/cart.ui`
+========================================
+1. File → New → Dialog.
+2. Выделите диалог → ПКМ → Lay out → Lay Out Vertically.
+3. Свойства диалога:
+   - objectName: `CartDialog`
+   - windowTitle: `Оформление заказа`
+   - minimumSize: 720×480
+4. Добавьте QLabel:
+   - objectName: `lbl_title`
+   - text: `Оформление заказа`
+   - wordWrap: true
+5. Добавьте Table Widget (Item Widgets → Table Widget):
+   - objectName: `table_items`
+   - columnCount: 4
+   - заголовки колонок (по порядку): `Товар`, `Кол-во`, `Цена`, `Сумма`
 
-3. product_item.ui (карточка товара)
-3.1. File → New → Widget.
-3.2. Корневой виджет: QWidget, objectName: ProductItem (или Card).
-     - sizePolicy: Preferred / Fixed по высоте (можно minimumHeight около 220–240)
-3.3. Поставить ГОРИЗОНТАЛЬНЫЙ layout на корневой виджет:
-     - кликнуть по пустому месту внутри виджета,
-     - ПКМ → Lay out → Lay Out Horizontally.
-3.4. Слева добавить QLabel для фото:
-     - objectName: lbl_photo
-     - minimumSize: 300×200
-     - maximumSize: 300×200
-     - scaledContents: true
-     - text: удалить (пусто)
-3.5. Справа добавить вертикальный layout с текстовой информацией:
-     - QLabel для названия товара:
-       * objectName: lbl_name
-       * text: «Название товара»
-       * font: жирный
-     - QLabel для описания:
-       * objectName: lbl_desc
-       * text: «Описание»
-       * wordWrap: true
-     - QLabel для производителя:
-       * objectName: lbl_manufacturer
-       * text: «Производитель»
-     - QLabel для поставщика:
-       * objectName: lbl_supplier
-       * text: «Поставщик»
-     - QLabel для цены и единицы:
-       * objectName: lbl_price
-       * text: «Цена»
-     - QLabel для остатка на складе:
-       * objectName: lbl_stock
-       * text: «Остаток»
-     - Опционально: QLabel для скидки:
-       * objectName: lbl_discount
-       * text: «Скидка»
-3.6. Внизу справа добавить горизонтальный layout с кнопками:
-     - QPushButton «Удалить»:
-       * objectName: btn_delete
-       * text: «Удалить»
-     - QPushButton «В корзину»:
-       * objectName: btn_add_to_cart
-       * text: «В корзину»
-3.7. Сохранить как ui/product_item.ui.
+6. Добавьте внизу 2 блока в один ряд:
+   6.1 Добавьте контейнеры: сначала Layout для формы слева и Layout для итога справа.
+   6.2 Проще сделать так: добавьте Widget (контейнер) и ещё один Widget рядом → выделите оба → Lay Out Horizontally.
 
-3.8. РАСПОЛОЖЕНИЕ И ВНЕШНИЙ ВИД (как в проекте):
-     — Корневой виджет: QFrame (не QWidget), frameShape: Box, lineWidth: 1 — видимая рамка вокруг карточки. minimumSize 400×200.
-     — Один горизонтальный layout (main_layout). Три колонки:
-       1) Слева — QLabel для фото (photo_label): minimumSize 300×200, alignment: AlignCenter. Код подставляет изображение.
-       2) По центру — QScrollArea (scroll_center): widgetResizable: true, frameShape: NoFrame, horizontalScrollBarPolicy: AlwaysOff. Внутри — виджет center_widget с вертикальным layout center_layout: spacing 0, отступы left 4, top 2, right 4, bottom 2. В нём подряд QLabel: lbl_header (заголовок/название), lbl_desc_title, lbl_desc, lbl_manufacturer, lbl_supplier, lbl_price, lbl_unit, lbl_stock — у всех wordWrap: true.
-       3) Справа — виджет right_column, minimumWidth 180, вертикальный layout vl_actions: сверху discount_label (minimumSize 160×50, AlignCenter, wordWrap), кнопка «В заказ» (btn_order), кнопка «Удалить» (btn_delete).
-     — Итог: слева фото, по центру текст с прокруткой, справа скидка и кнопки.
+Левый блок (форма):
+7. В левый контейнер добавьте 4 виджета (Label+ComboBox, Label+DateEdit), затем выделите их → Lay Out in a Form.
+8. Свойства:
+   - lbl_pickup: text `Пункт выдачи`, wordWrap true
+   - cb_pickup: objectName `cb_pickup`
+   - lbl_delivery: text `Дата выдачи/доставки`, wordWrap true
+   - de_delivery: objectName `de_delivery`, calendarPopup true
 
-4. cart.ui (диалог «Корзина»)
-4.1. File → New → Dialog with Buttons Bottom (или Dialog).
-4.2. Корневой объект: QDialog, objectName: CartDialog.
-     - windowTitle: «Корзина»
-     - size: примерно 700×500
-4.3. Поставить ВЕРТИКАЛЬНЫЙ layout на QDialog:
-     - кликнуть внутри пустого места диалога,
-     - ПКМ → Lay out → Lay Out Vertically.
-4.4. Вверху добавить QLabel «Корзина»:
-     - objectName: lbl_title
-     - text: «Корзина»
-4.5. Ниже добавить QTableWidget или QTableView:
-     - objectName: table_items
-     - (для QTableWidget) columnCount: 4
-     - horizontalHeaderLabels: «Товар», «Цена», «Кол-во», «Сумма»
-     - selectionBehavior: SelectRows
-     - editTriggers: NoEditTriggers
-4.6. Под таблицей добавить QHBoxLayout:
-     - QLabel «Пункт выдачи»:
-       * objectName: lbl_pickup
-       * text: «Пункт выдачи»
-     - QComboBox:
-       * objectName: combo_pickup
-4.7. Ещё ниже добавить QHBoxLayout:
-     - QLabel «Дата выдачи»:
-       * objectName: lbl_delivery
-       * text: «Дата выдачи»
-     - QDateEdit:
-       * objectName: date_delivery
-       * calendarPopup: true
-4.8. Внизу добавить QHBoxLayout:
-     - QLabel «Итого:»:
-       * objectName: lbl_total_title
-       * text: «Итого:»
-     - QLabel для суммы:
-       * objectName: lbl_total
-       * text: «0»
-4.9. В самом низу — горизонтальный layout для кнопок:
-     - QPushButton «Удалить позицию»:
-       * objectName: btn_remove
-       * text: «Удалить позицию»
-     - QPushButton «Оформить заказ»:
-       * objectName: btn_confirm
-       * text: «Оформить заказ»
-       * default: true
-     - QPushButton «Отмена»:
-       * objectName: btn_cancel
-       * text: «Отмена»
-4.10. Сохранить как ui/cart.ui.
+Правый блок (итого):
+9. В правый контейнер добавьте QLabel, QLabel, Vertical Spacer (в этом порядке) → выделите → Lay Out Vertically.
+10. Свойства:
+   - lbl_total_title: text `Итого:`, wordWrap true
+   - lbl_total: text `0.00 ₽`, wordWrap true
 
-4.11. РАСПОЛОЖЕНИЕ И ВНЕШНИЙ ВИД (как в проекте):
-     — Один вертикальный layout на диалог. minimumSize 720×480, windowTitle «Оформление заказа».
-     — Сверху: QLabel «Оформление заказа» (lbl_title), wordWrap: true.
-     — Таблица table_items: 4 колонки — «Товар», «Кол-во», «Цена», «Сумма» (именно такой порядок в проекте).
-     — Ниже — один QHBoxLayout (hl_row): слева QFormLayout с двумя строками — «Пункт выдачи» + cb_pickup, «Дата выдачи/доставки» + de_delivery (calendarPopup: true). Справа в том же ряду — вертикальный layout vl_total: «Итого:» (lbl_total_title), сумма (lbl_total, текст «0.00 ₽»), вертикальный spacer (20×40), чтобы кнопки не прилипали.
-     — Внизу — QHBoxLayout кнопок (hl_buttons): btn_remove «Удалить позицию», Horizontal Spacer (40×20), btn_cancel «Назад», btn_confirm «Оформить». Spacer прижимает кнопки вправо.
+Кнопки:
+11. Добавьте внизу: PushButton, Horizontal Spacer, PushButton, PushButton → выделите 4 элемента → Lay Out Horizontally.
+12. Свойства:
+   - btn_remove: text `Удалить позицию`
+   - btn_cancel: text `Назад`
+   - btn_confirm: text `Оформить`
+13. Save As → `ui/cart.ui`.
 
-5. orders_list.ui (окно списка заказов)
-5.1. File → New → Main Window (можно и Dialog, если удобнее).
-5.2. Корневой объект: QMainWindow или QDialog, objectName: OrdersWindow.
-     - windowTitle: «Заказы»
-5.3. Если это MainWindow:
-     - В centralWidget поставить ВЕРТИКАЛЬНЫЙ layout (Lay Out Vertically).
-5.4. Вверху:
-     - QLabel «Заказы»:
-       * objectName: lbl_title
-       * text: «Заказы»
-     - QLabel для пользователя (опционально):
-       * objectName: lbl_user
-       * text: «Пользователь»
-5.5. Ниже добавить QTableWidget / QTableView:
-     - objectName: table_orders
-     - (для QTableWidget) columnCount: не меньше 5
-     - horizontalHeaderLabels: «№», «Дата заказа», «Пункт выдачи», «Клиент», «Статус»
-     - selectionBehavior: SelectRows
-     - editTriggers: NoEditTriggers
-5.6. Внизу добавить горизонтальный layout для кнопок:
-     - QPushButton «Открыть»:
-       * objectName: btn_open
-       * text: «Открыть»
-     - QPushButton «Удалить»:
-       * objectName: btn_delete
-       * text: «Удалить»
-     - QPushButton «Закрыть»:
-       * objectName: btn_close
-       * text: «Закрыть»
-5.7. Сохранить как ui/orders_list.ui.
+========================================
+5) `ui/orders_list.ui`
+========================================
+1. File → New → Main Window.
+2. Свойства окна:
+   - objectName: `OrderListWindow`
+   - windowTitle: `Заказы`
+3. Выделите centralWidget → Lay Out Vertically.
 
-5.8. РАСПОЛОЖЕНИЕ И ВНЕШНИЙ ВИД (как в проекте):
-     — Main Window, centralWidget с вертикальным layout.
-     — Верхняя строка (QHBoxLayout head): lbl_title «Заказы», кнопка «Назад» (btn_back), Horizontal Spacer (40×20), lbl_user «Гость» — ФИО справа.
-     — Вторая строка (QHBoxLayout row_buttons): «Добавить заказ» (btn_add), «Удалить заказ» (btn_del).
-     — Третья — таблица (objectName: table): 6 колонок — «Артикул заказа», «Статус заказа», «Адрес пункта выдачи», «Дата заказа», «Дата доставки», «Клиент». Таблицу дать растягиваться (sizePolicy Expanding по вертикали или layout stretch).
+Шапка:
+4. Добавьте: QLabel, PushButton, Horizontal Spacer, QLabel → выделите → Lay Out Horizontally.
+5. Свойства:
+   - lbl_title: text `Заказы`, wordWrap true
+   - btn_back: text `Назад`
+   - lbl_user: text `Гость`, wordWrap true
 
-6. order_form.ui (диалог «Заказ»)
-6.1. File → New → Dialog with Buttons Bottom.
-6.2. Корневой объект: QDialog, objectName: OrderFormDialog.
-     - windowTitle: «Заказ»
-     - size: примерно 500×400
-6.3. Поставить ВЕРТИКАЛЬНЫЙ layout на диалог (Lay Out Vertically).
-     Дальше внутри добавлять GroupBox и уже внутри них ставить Form layout (Lay Out in a Form).
-6.4. Поля формы (примерный состав):
-     - QLineEdit «Номер заказа»:
-       * objectName: edit_order_id
-       * text: пусто
-       * readOnly: true
-     - QDateEdit «Дата заказа»:
-       * objectName: date_order
-       * calendarPopup: true
-     - QDateEdit «Дата доставки»:
-       * objectName: date_delivery
-       * calendarPopup: true
-     - QComboBox «Пункт выдачи»:
-       * objectName: combo_pickup
-     - QComboBox «Статус»:
-       * objectName: combo_status
-     - QLineEdit «Код получения»:
-       * objectName: edit_pickup_code
-     - QComboBox или QLabel «Клиент»:
-       * objectName: combo_user (если QComboBox)
-6.5. Внизу — горизонтальный layout для кнопок:
-     - QPushButton «Сохранить»:
-       * objectName: btn_save
-       * text: «Сохранить»
-       * default: true
-     - QPushButton «Отмена»:
-       * objectName: btn_cancel
-       * text: «Отмена»
-6.6. Сохранить как ui/order_form.ui.
+Кнопки:
+6. Добавьте: PushButton, PushButton → выделите → Lay Out Horizontally.
+7. Свойства:
+   - btn_add: text `Добавить заказ`
+   - btn_del: text `Удалить заказ`
 
-6.7. РАСПОЛОЖЕНИЕ И ВНЕШНИЙ ВИД (как в проекте):
-     — Один вертикальный layout. minimumSize 520×420, windowTitle «Заказ».
-     — Сверху — QGroupBox «Данные заказа» (left_group). Внутри QFormLayout: строки — ID (lbl_id + id_edit readOnly), Артикул заказа (lbl_article + article_edit), Статус заказа (lbl_status + status_combo), Адрес пункта выдачи (lbl_pickup + pickup_edit), Дата заказа (lbl_order_date + order_date_edit, calendarPopup), Клиент (lbl_user + user_combo). У всех подписей wordWrap: true.
-     — Ниже — второй QGroupBox «Доставка» (right_group). Внутри QFormLayout: Дата доставки (lbl_delivery + delivery_date_edit, calendarPopup).
-     — Внизу — QHBoxLayout кнопок: btn_save «Сохранить», btn_cancel «Отмена». Группы визуально отделяют блоки полей.
+Таблица:
+8. Добавьте Table Widget:
+   - objectName: `table`
+   - columnCount: 6
+   - заголовки (по порядку):
+     1) `Артикул заказа`
+     2) `Статус заказа`
+     3) `Адрес пункта выдачи`
+     4) `Дата заказа`
+     5) `Дата доставки`
+     6) `Клиент`
+9. Save As → `ui/orders_list.ui`.
 
-7. product_form.ui (диалог «Товар»)
-7.1. File → New → Dialog with Buttons Bottom.
-7.2. Корневой объект: QDialog, objectName: ProductFormDialog.
-     - windowTitle: «Товар»
-     - size: примерно 700×500
-7.3. Поставить ВЕРТИКАЛЬНЫЙ layout на диалог (Lay Out Vertically).
-     Дальше внутри групп (GroupBox) ставить нужные layout’ы:
-     - для строки ID: Horizontal layout (Lay Out Horizontally),
-     - для формы полей: Form layout (Lay Out in a Form),
-     - для фото-блока: Vertical layout (Lay Out Vertically).
-7.4. Слева:
-     - QLabel для фото:
-       * objectName: lbl_photo
-       * minimumSize: 300×200
-       * maximumSize: 300×200
-       * scaledContents: true
-       * text: удалить (пусто)
-     - QPushButton «Выбрать фото»:
-       * objectName: btn_choose_photo
-       * text: «Выбрать фото»
-7.5. Справа — QFormLayout с полями:
-     - QLineEdit «Артикул»:
-       * objectName: edit_article
-       * placeholderText: «Артикул»
-     - QLineEdit «Название»:
-       * objectName: edit_name
-       * placeholderText: «Название товара»
-     - QComboBox «Единица измерения»:
-       * objectName: combo_unit
-     - QDoubleSpinBox «Цена»:
-       * objectName: spin_price
-       * minimum: 0
-       * maximum: 1000000
-       * decimals: 2
-     - QSpinBox «Остаток»:
-       * objectName: spin_stock
-       * minimum: 0
-       * maximum: 1000000
-     - QDoubleSpinBox «Скидка %»:
-       * objectName: spin_discount
-       * minimum: 0
-       * maximum: 100
-       * decimals: 2
-     - QComboBox «Поставщик»:
-       * objectName: combo_supplier
-     - QComboBox «Производитель»:
-       * objectName: combo_manufacturer
-     - QComboBox «Категория»:
-       * objectName: combo_category
-     - QTextEdit «Описание»:
-       * objectName: text_description
-7.6. Внизу — горизонтальный layout для кнопок:
-     - QPushButton «Сохранить»:
-       * objectName: btn_save
-       * text: «Сохранить»
-       * default: true
-     - QPushButton «Отмена»:
-       * objectName: btn_cancel
-       * text: «Отмена»
-7.7. Сохранить как ui/product_form.ui.
+========================================
+6) `ui/order_form.ui`
+========================================
+1. File → New → Dialog.
+2. Выделите диалог → Lay Out Vertically.
+3. Свойства диалога:
+   - objectName: `OrderEditWindow`
+   - windowTitle: `Заказ`
+   - minimumSize: 520×420
 
-7.8. РАСПОЛОЖЕНИЕ И ВНЕШНИЙ ВИД (как в проекте):
-     — Один вертикальный layout на диалог. minimumSize 560×520, windowTitle «Товар».
-     — Одна большая QGroupBox «Данные товара» (data_group). Внутри — вертикальный layout (data_layout):
-       1) Первая строка — QHBoxLayout (row_id): lbl_id «ID:», id_edit (readOnly).
-       2) Вложенная QGroupBox «Фото» (photo_group): внутри VBox — photo_label (minimumSize 300×200), кнопка «Добавить изображение» (btn_photo).
-       3) QFormLayout с полями в два столбца: Артикул (lbl_article, article_edit), Наименование (lbl_name, name_edit), Категория (lbl_category, category_combo editable), Описание (lbl_desc, desc_edit), Производитель (lbl_manuf, manuf_combo), Поставщик (lbl_supp, supp_edit), Цена (lbl_price, price_spin 0–999999, 2 знака), Ед. изм. (lbl_unit, unit_edit), Кол-во (lbl_qty, qty_spin 0–999999), Скидка % (lbl_discount, discount_spin 0–100, 2 знака). У всех подписей wordWrap: true.
-     — Внизу — QHBoxLayout кнопок: btn_save «Сохранить», btn_cancel «Отмена». Всё в одной группе «Данные товара», внутри неё подгруппа «Фото» и форма.
+Группа 1: «Данные заказа»
+4. Добавьте Group Box (Containers → Group Box).
+5. Свойства:
+   - objectName: `left_group`
+   - title: `Данные заказа`
+6. Внутрь left_group добавьте 12 виджетов (6 строк формы), затем выделите их → Lay Out in a Form.
+7. Строки (свойства по каждому):
+   - lbl_id: text `ID:`, wordWrap true; id_edit: objectName `id_edit`, readOnly true
+   - lbl_article: text `Артикул заказа:`, wordWrap true; article_edit: objectName `article_edit`, placeholderText `Артикул заказа`
+   - lbl_status: text `Статус заказа:`, wordWrap true; status_combo: objectName `status_combo`
+   - lbl_pickup: text `Адрес пункта выдачи:`, wordWrap true; pickup_edit: objectName `pickup_edit`, placeholderText `Адрес пункта выдачи`
+   - lbl_order_date: text `Дата заказа:`, wordWrap true; order_date_edit: objectName `order_date_edit`, calendarPopup true
+   - lbl_user: text `Клиент:`, wordWrap true; user_combo: objectName `user_combo`
 
-ЭТОЙ ПОСЛЕДОВАТЕЛЬНОСТИ ДОСТАТОЧНО:
-— идёте сверху вниз по списку файлов,
-— в Qt Designer создаёте окно нужного типа,
-— расставляете виджеты с указанными objectName,
-— сохраняете под указанным именем ui-файла.
+Группа 2: «Доставка»
+8. Добавьте Group Box.
+9. Свойства:
+   - objectName: `right_group`
+   - title: `Доставка`
+10. Внутрь right_group добавьте 2 виджета (Label + Date Edit) → выделите → Lay Out in a Form.
+11. Свойства:
+   - lbl_delivery: text `Дата доставки:`, wordWrap true
+   - delivery_date_edit: objectName `delivery_date_edit`, calendarPopup true
+
+Кнопки:
+12. Добавьте PushButton, PushButton → выделите → Lay Out Horizontally.
+13. Свойства:
+   - btn_save: text `Сохранить`
+   - btn_cancel: text `Отмена`
+14. Save As → `ui/order_form.ui`.
+
+========================================
+7) `ui/product_form.ui`
+========================================
+1. File → New → Dialog.
+2. Выделите диалог → Lay Out Vertically.
+3. Свойства диалога:
+   - objectName: `ProductEditWindow`
+   - windowTitle: `Товар`
+   - minimumSize: 560×520
+
+Группа «Данные товара»:
+4. Добавьте Group Box.
+5. Свойства:
+   - objectName: `data_group`
+   - title: `Данные товара`
+6. Внутрь data_group поставьте Vertical layout (выделите data_group → Lay Out Vertically).
+
+Строка ID:
+7. Добавьте QLabel и QLineEdit → выделите эти 2 → Lay Out Horizontally.
+8. Свойства:
+   - lbl_id: text `ID:`, wordWrap true
+   - id_edit: objectName `id_edit`, readOnly true
+
+Группа «Фото»:
+9. Добавьте Group Box.
+10. Свойства:
+    - objectName: `photo_group`
+    - title: `Фото`
+11. Внутрь photo_group добавьте QLabel и PushButton → выделите → Lay Out Vertically.
+12. Свойства:
+    - photo_label: objectName `photo_label`, minimumSize 300×200
+    - btn_photo: objectName `btn_photo`, text `Добавить изображение`
+
+Форма полей (Form layout):
+13. Добавьте 20 виджетов (10 строк): Label + поле, Label + поле … → выделите → Lay Out in a Form.
+14. Строки (свойства):
+    - lbl_article: text `Артикул:`, wordWrap true; article_edit: objectName `article_edit`
+    - lbl_name: text `Наименование:`, wordWrap true; name_edit: objectName `name_edit`
+    - lbl_category: text `Категория:`, wordWrap true; category_combo: objectName `category_combo`, editable true
+    - lbl_desc: text `Описание:`, wordWrap true; desc_edit: objectName `desc_edit` (Text Edit)
+    - lbl_manuf: text `Производитель:`, wordWrap true; manuf_combo: objectName `manuf_combo`, editable true
+    - lbl_supp: text `Поставщик:`, wordWrap true; supp_edit: objectName `supp_edit`
+    - lbl_price: text `Цена:`, wordWrap true; price_spin: objectName `price_spin`, min 0, max 999999, decimals 2
+    - lbl_unit: text `Ед. изм.:`, wordWrap true; unit_edit: objectName `unit_edit`
+    - lbl_qty: text `Кол-во:`, wordWrap true; qty_spin: objectName `qty_spin`, min 0, max 999999
+    - lbl_discount: text `Скидка %:`, wordWrap true; discount_spin: objectName `discount_spin`, min 0, max 100, decimals 2
+
+Кнопки:
+15. Добавьте PushButton, PushButton → выделите → Lay Out Horizontally.
+16. Свойства:
+    - btn_save: text `Сохранить`
+    - btn_cancel: text `Отмена`
+17. Save As → `ui/product_form.ui`.
 
