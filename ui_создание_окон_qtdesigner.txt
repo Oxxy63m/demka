@@ -1,0 +1,375 @@
+ПОСЛЕДОВАТЕЛЬНОСТЬ СОЗДАНИЯ ОКОН В QT DESIGNER
+
+Файлы ui по порядку:
+1) login.ui  — окно входа
+2) main.ui   — главное окно со списком товаров
+3) product_item.ui — карточка товара (виджет)
+4) cart.ui   — диалог «Корзина»
+5) orders_list.ui — окно списка заказов
+6) order_form.ui  — диалог «Заказ»
+7) product_form.ui — диалог «Товар»
+
+Ниже для каждого окна: параметры виджетов и блок «РАСПОЛОЖЕНИЕ И ВНЕШНИЙ ВИД» — как добиться того же расположения и вида, что в текущем проекте (порядок элементов, спейсеры, размеры, группы, рамки).
+
+ДАЛЬШЕ — КРАТКО, КАК СОЗДАВАТЬ КАЖДОЕ ОКНО.
+
+1. login.ui (окно входа)
+1.1. В Qt Designer: File → New → Dialog with Buttons Bottom (или просто Dialog).
+1.2. В Object Inspector убедиться, что корневой объект называется «Dialog», потом в свойствах задать objectName: LoginDialog (имя произвольное, главное — понятно).
+1.3. Добавить QVBoxLayout на всё окно.
+1.4. В верхней части добавить QLabel для логотипа:
+     - objectName: lbl_logo
+     - text: удалить (пусто)
+     - alignment: AlignHCenter
+1.5. Под ним добавить QFormLayout или вертикальный layout:
+     - QLineEdit для логина:
+       * objectName: login_edit
+       * placeholderText: «Логин»
+     - QLineEdit для пароля:
+       * objectName: password_edit
+       * placeholderText: «Пароль»
+       * Echo mode: Password
+1.6. Внизу добавить горизонтальный layout с кнопками:
+     - QPushButton «Войти»:
+       * objectName: btn_login
+       * text: «Войти»
+       * default: true
+     - QPushButton «Войти как гость»:
+       * objectName: btn_guest
+       * text: «Войти как гость»
+1.7. В свойствах диалога:
+     - windowTitle: «Вход в систему»
+     - size: примерно 400×250
+1.8. Сохранить как ui/login.ui.
+
+1.9. РАСПОЛОЖЕНИЕ И ВНЕШНИЙ ВИД (как в проекте):
+     — Один вертикальный layout на всё окно (QVBoxLayout).
+     — Порядок сверху вниз:
+       1) QLabel логотипа — выровнять по центру по горизонтали (alignment для item: Qt::AlignHCenter).
+          Размеры: minimumSize 120×120, maximumSize 150×150; scaledContents: true; alignment виджета: AlignCenter.
+       2) QLabel «Авторизация» — по центру (alignment: Qt::AlignCenter), wordWrap: true.
+       3) QLabel «Логин:», затем QLineEdit логина.
+       4) QLabel «Пароль:», затем QLineEdit пароля.
+       5) Горизонтальный layout с двумя кнопками «Войти» и «Войти как гость» (рядом).
+     — Окно: geometry/minimumSize 440×320. Подписи полей можно оформить отдельными QLabel над каждым полем.
+
+2. main.ui (главное окно со списком товаров)
+2.1. File → New → Main Window.
+2.2. В свойствах задать:
+     - objectName: MainWindow
+     - windowTitle: «Список товаров»
+2.3. Установить центральный виджет (centralWidget) и задать ему вертикальный QVBoxLayout.
+2.4. Вверху добавить QHBoxLayout с элементами:
+     - QLabel «Список товаров»:
+       * objectName: lbl_title
+       * text: «Список товаров»
+       * font: жирный, размер можно 18 pt
+     - QLabel для ФИО пользователя:
+       * objectName: lbl_user
+       * text: «Гость»
+       * wordWrap: true
+2.5. Ниже добавить QHBoxLayout для поиска и фильтров:
+     - QLabel «Поиск»:
+       * objectName: lbl_search
+       * text: «Поиск»
+     - QLineEdit:
+       * objectName: search_edit
+       * placeholderText: «Введите название товара»
+     - QLabel «Поставщик»:
+       * objectName: lbl_supplier
+       * text: «Поставщик»
+     - QComboBox:
+       * objectName: supplier_combo
+       * editable: false
+     - QLabel «Сортировка»:
+       * objectName: lbl_sort
+       * text: «Сортировка»
+     - QComboBox:
+       * objectName: sort_combo
+       * editable: false
+2.6. Ниже добавить QScrollArea:
+     - objectName: cards_scroll
+     - widgetResizable: true
+     - frameShape: NoFrame (по желанию)
+     - Внутри scrollAreaWidgetContents:
+       * задать вертикальный layout
+       * objectName этого layout: cards_layout
+2.7. Внизу добавить QHBoxLayout для кнопок:
+     - QPushButton «Заказы»:
+       * objectName: btn_orders
+       * text: «Заказы»
+     - QPushButton «Добавить»:
+       * objectName: btn_add
+       * text: «Добавить»
+     - QPushButton «Корзина»:
+       * objectName: btn_cart
+       * text: «Корзина»
+     - QPushButton «Выход»:
+       * objectName: btn_logout
+       * text: «Выход»
+2.8. Сохранить как ui/main.ui.
+
+2.9. РАСПОЛОЖЕНИЕ И ВНЕШНИЙ ВИД (как в проекте):
+     — centralWidget с одним вертикальным layout (QVBoxLayout).
+     — Верхняя строка (QHBoxLayout, имя head): слева направо — lbl_title «Список товаров», кнопки «Заказы», «Заказ», «Выход», затем Horizontal Spacer (sizeHint 40×20), затем lbl_user «Гость». Spacer прижимает ФИО вправо.
+     — Вторая строка (QHBoxLayout, row_filter): «Поиск:» (lbl_search), search_edit (placeholder «Поиск по названию, артикулу...»), «Поставщик:», supplier_combo, «Сортировка по количеству:», sort_combo — всё в одну линию.
+     — Третья строка (QHBoxLayout, row_buttons): одна кнопка «Добавить товар» (btn_add).
+     — Четвёртый элемент — QScrollArea (cards_scroll): widgetResizable: true, horizontalScrollBarPolicy: ScrollBarAlwaysOff. Внутри — виджет cards_container с вертикальным layout cards_layout, alignment: AlignTop (карточки прижаты к верху). Этот layout заполняется кодом.
+     — Окно: minimumSize 800×500.
+
+3. product_item.ui (карточка товара)
+3.1. File → New → Widget.
+3.2. Корневой виджет: QWidget, objectName: ProductItem (или Card).
+     - sizePolicy: Preferred / Fixed по высоте (можно minimumHeight около 220–240)
+3.3. Установить горизонтальный QHBoxLayout.
+3.4. Слева добавить QLabel для фото:
+     - objectName: lbl_photo
+     - minimumSize: 300×200
+     - maximumSize: 300×200
+     - scaledContents: true
+     - text: удалить (пусто)
+3.5. Справа добавить вертикальный layout с текстовой информацией:
+     - QLabel для названия товара:
+       * objectName: lbl_name
+       * text: «Название товара»
+       * font: жирный
+     - QLabel для описания:
+       * objectName: lbl_desc
+       * text: «Описание»
+       * wordWrap: true
+     - QLabel для производителя:
+       * objectName: lbl_manufacturer
+       * text: «Производитель»
+     - QLabel для поставщика:
+       * objectName: lbl_supplier
+       * text: «Поставщик»
+     - QLabel для цены и единицы:
+       * objectName: lbl_price
+       * text: «Цена»
+     - QLabel для остатка на складе:
+       * objectName: lbl_stock
+       * text: «Остаток»
+     - Опционально: QLabel для скидки:
+       * objectName: lbl_discount
+       * text: «Скидка»
+3.6. Внизу справа добавить горизонтальный layout с кнопками:
+     - QPushButton «Удалить»:
+       * objectName: btn_delete
+       * text: «Удалить»
+     - QPushButton «В корзину»:
+       * objectName: btn_add_to_cart
+       * text: «В корзину»
+3.7. Сохранить как ui/product_item.ui.
+
+3.8. РАСПОЛОЖЕНИЕ И ВНЕШНИЙ ВИД (как в проекте):
+     — Корневой виджет: QFrame (не QWidget), frameShape: Box, lineWidth: 1 — видимая рамка вокруг карточки. minimumSize 400×200.
+     — Один горизонтальный layout (main_layout). Три колонки:
+       1) Слева — QLabel для фото (photo_label): minimumSize 300×200, alignment: AlignCenter. Код подставляет изображение.
+       2) По центру — QScrollArea (scroll_center): widgetResizable: true, frameShape: NoFrame, horizontalScrollBarPolicy: AlwaysOff. Внутри — виджет center_widget с вертикальным layout center_layout: spacing 0, отступы left 4, top 2, right 4, bottom 2. В нём подряд QLabel: lbl_header (заголовок/название), lbl_desc_title, lbl_desc, lbl_manufacturer, lbl_supplier, lbl_price, lbl_unit, lbl_stock — у всех wordWrap: true.
+       3) Справа — виджет right_column, minimumWidth 180, вертикальный layout vl_actions: сверху discount_label (minimumSize 160×50, AlignCenter, wordWrap), кнопка «В заказ» (btn_order), кнопка «Удалить» (btn_delete).
+     — Итог: слева фото, по центру текст с прокруткой, справа скидка и кнопки.
+
+4. cart.ui (диалог «Корзина»)
+4.1. File → New → Dialog with Buttons Bottom (или Dialog).
+4.2. Корневой объект: QDialog, objectName: CartDialog.
+     - windowTitle: «Корзина»
+     - size: примерно 700×500
+4.3. Установить вертикальный QVBoxLayout.
+4.4. Вверху добавить QLabel «Корзина»:
+     - objectName: lbl_title
+     - text: «Корзина»
+4.5. Ниже добавить QTableWidget или QTableView:
+     - objectName: table_items
+     - (для QTableWidget) columnCount: 4
+     - horizontalHeaderLabels: «Товар», «Цена», «Кол-во», «Сумма»
+     - selectionBehavior: SelectRows
+     - editTriggers: NoEditTriggers
+4.6. Под таблицей добавить QHBoxLayout:
+     - QLabel «Пункт выдачи»:
+       * objectName: lbl_pickup
+       * text: «Пункт выдачи»
+     - QComboBox:
+       * objectName: combo_pickup
+4.7. Ещё ниже добавить QHBoxLayout:
+     - QLabel «Дата выдачи»:
+       * objectName: lbl_delivery
+       * text: «Дата выдачи»
+     - QDateEdit:
+       * objectName: date_delivery
+       * calendarPopup: true
+4.8. Внизу добавить QHBoxLayout:
+     - QLabel «Итого:»:
+       * objectName: lbl_total_title
+       * text: «Итого:»
+     - QLabel для суммы:
+       * objectName: lbl_total
+       * text: «0»
+4.9. В самом низу — горизонтальный layout для кнопок:
+     - QPushButton «Удалить позицию»:
+       * objectName: btn_remove
+       * text: «Удалить позицию»
+     - QPushButton «Оформить заказ»:
+       * objectName: btn_confirm
+       * text: «Оформить заказ»
+       * default: true
+     - QPushButton «Отмена»:
+       * objectName: btn_cancel
+       * text: «Отмена»
+4.10. Сохранить как ui/cart.ui.
+
+4.11. РАСПОЛОЖЕНИЕ И ВНЕШНИЙ ВИД (как в проекте):
+     — Один вертикальный layout на диалог. minimumSize 720×480, windowTitle «Оформление заказа».
+     — Сверху: QLabel «Оформление заказа» (lbl_title), wordWrap: true.
+     — Таблица table_items: 4 колонки — «Товар», «Кол-во», «Цена», «Сумма» (именно такой порядок в проекте).
+     — Ниже — один QHBoxLayout (hl_row): слева QFormLayout с двумя строками — «Пункт выдачи» + cb_pickup, «Дата выдачи/доставки» + de_delivery (calendarPopup: true). Справа в том же ряду — вертикальный layout vl_total: «Итого:» (lbl_total_title), сумма (lbl_total, текст «0.00 ₽»), вертикальный spacer (20×40), чтобы кнопки не прилипали.
+     — Внизу — QHBoxLayout кнопок (hl_buttons): btn_remove «Удалить позицию», Horizontal Spacer (40×20), btn_cancel «Назад», btn_confirm «Оформить». Spacer прижимает кнопки вправо.
+
+5. orders_list.ui (окно списка заказов)
+5.1. File → New → Main Window (можно и Dialog, если удобнее).
+5.2. Корневой объект: QMainWindow или QDialog, objectName: OrdersWindow.
+     - windowTitle: «Заказы»
+5.3. Если это MainWindow:
+     - В centralWidget установить вертикальный QVBoxLayout.
+5.4. Вверху:
+     - QLabel «Заказы»:
+       * objectName: lbl_title
+       * text: «Заказы»
+     - QLabel для пользователя (опционально):
+       * objectName: lbl_user
+       * text: «Пользователь»
+5.5. Ниже добавить QTableWidget / QTableView:
+     - objectName: table_orders
+     - (для QTableWidget) columnCount: не меньше 5
+     - horizontalHeaderLabels: «№», «Дата заказа», «Пункт выдачи», «Клиент», «Статус»
+     - selectionBehavior: SelectRows
+     - editTriggers: NoEditTriggers
+5.6. Внизу добавить горизонтальный layout для кнопок:
+     - QPushButton «Открыть»:
+       * objectName: btn_open
+       * text: «Открыть»
+     - QPushButton «Удалить»:
+       * objectName: btn_delete
+       * text: «Удалить»
+     - QPushButton «Закрыть»:
+       * objectName: btn_close
+       * text: «Закрыть»
+5.7. Сохранить как ui/orders_list.ui.
+
+5.8. РАСПОЛОЖЕНИЕ И ВНЕШНИЙ ВИД (как в проекте):
+     — Main Window, centralWidget с вертикальным layout.
+     — Верхняя строка (QHBoxLayout head): lbl_title «Заказы», кнопка «Назад» (btn_back), Horizontal Spacer (40×20), lbl_user «Гость» — ФИО справа.
+     — Вторая строка (QHBoxLayout row_buttons): «Добавить заказ» (btn_add), «Удалить заказ» (btn_del).
+     — Третья — таблица (objectName: table): 6 колонок — «Артикул заказа», «Статус заказа», «Адрес пункта выдачи», «Дата заказа», «Дата доставки», «Клиент». Таблицу дать растягиваться (sizePolicy Expanding по вертикали или layout stretch).
+
+6. order_form.ui (диалог «Заказ»)
+6.1. File → New → Dialog with Buttons Bottom.
+6.2. Корневой объект: QDialog, objectName: OrderFormDialog.
+     - windowTitle: «Заказ»
+     - size: примерно 500×400
+6.3. Установить QFormLayout или QVBoxLayout.
+6.4. Поля формы (примерный состав):
+     - QLineEdit «Номер заказа»:
+       * objectName: edit_order_id
+       * text: пусто
+       * readOnly: true
+     - QDateEdit «Дата заказа»:
+       * objectName: date_order
+       * calendarPopup: true
+     - QDateEdit «Дата доставки»:
+       * objectName: date_delivery
+       * calendarPopup: true
+     - QComboBox «Пункт выдачи»:
+       * objectName: combo_pickup
+     - QComboBox «Статус»:
+       * objectName: combo_status
+     - QLineEdit «Код получения»:
+       * objectName: edit_pickup_code
+     - QComboBox или QLabel «Клиент»:
+       * objectName: combo_user (если QComboBox)
+6.5. Внизу — горизонтальный layout для кнопок:
+     - QPushButton «Сохранить»:
+       * objectName: btn_save
+       * text: «Сохранить»
+       * default: true
+     - QPushButton «Отмена»:
+       * objectName: btn_cancel
+       * text: «Отмена»
+6.6. Сохранить как ui/order_form.ui.
+
+6.7. РАСПОЛОЖЕНИЕ И ВНЕШНИЙ ВИД (как в проекте):
+     — Один вертикальный layout. minimumSize 520×420, windowTitle «Заказ».
+     — Сверху — QGroupBox «Данные заказа» (left_group). Внутри QFormLayout: строки — ID (lbl_id + id_edit readOnly), Артикул заказа (lbl_article + article_edit), Статус заказа (lbl_status + status_combo), Адрес пункта выдачи (lbl_pickup + pickup_edit), Дата заказа (lbl_order_date + order_date_edit, calendarPopup), Клиент (lbl_user + user_combo). У всех подписей wordWrap: true.
+     — Ниже — второй QGroupBox «Доставка» (right_group). Внутри QFormLayout: Дата доставки (lbl_delivery + delivery_date_edit, calendarPopup).
+     — Внизу — QHBoxLayout кнопок: btn_save «Сохранить», btn_cancel «Отмена». Группы визуально отделяют блоки полей.
+
+7. product_form.ui (диалог «Товар»)
+7.1. File → New → Dialog with Buttons Bottom.
+7.2. Корневой объект: QDialog, objectName: ProductFormDialog.
+     - windowTitle: «Товар»
+     - size: примерно 700×500
+7.3. Основной layout: QHBoxLayout (слева фото, справа поля) или QVBoxLayout с группами.
+7.4. Слева:
+     - QLabel для фото:
+       * objectName: lbl_photo
+       * minimumSize: 300×200
+       * maximumSize: 300×200
+       * scaledContents: true
+       * text: удалить (пусто)
+     - QPushButton «Выбрать фото»:
+       * objectName: btn_choose_photo
+       * text: «Выбрать фото»
+7.5. Справа — QFormLayout с полями:
+     - QLineEdit «Артикул»:
+       * objectName: edit_article
+       * placeholderText: «Артикул»
+     - QLineEdit «Название»:
+       * objectName: edit_name
+       * placeholderText: «Название товара»
+     - QComboBox «Единица измерения»:
+       * objectName: combo_unit
+     - QDoubleSpinBox «Цена»:
+       * objectName: spin_price
+       * minimum: 0
+       * maximum: 1000000
+       * decimals: 2
+     - QSpinBox «Остаток»:
+       * objectName: spin_stock
+       * minimum: 0
+       * maximum: 1000000
+     - QDoubleSpinBox «Скидка %»:
+       * objectName: spin_discount
+       * minimum: 0
+       * maximum: 100
+       * decimals: 2
+     - QComboBox «Поставщик»:
+       * objectName: combo_supplier
+     - QComboBox «Производитель»:
+       * objectName: combo_manufacturer
+     - QComboBox «Категория»:
+       * objectName: combo_category
+     - QTextEdit «Описание»:
+       * objectName: text_description
+7.6. Внизу — горизонтальный layout для кнопок:
+     - QPushButton «Сохранить»:
+       * objectName: btn_save
+       * text: «Сохранить»
+       * default: true
+     - QPushButton «Отмена»:
+       * objectName: btn_cancel
+       * text: «Отмена»
+7.7. Сохранить как ui/product_form.ui.
+
+7.8. РАСПОЛОЖЕНИЕ И ВНЕШНИЙ ВИД (как в проекте):
+     — Один вертикальный layout на диалог. minimumSize 560×520, windowTitle «Товар».
+     — Одна большая QGroupBox «Данные товара» (data_group). Внутри — вертикальный layout (data_layout):
+       1) Первая строка — QHBoxLayout (row_id): lbl_id «ID:», id_edit (readOnly).
+       2) Вложенная QGroupBox «Фото» (photo_group): внутри VBox — photo_label (minimumSize 300×200), кнопка «Добавить изображение» (btn_photo).
+       3) QFormLayout с полями в два столбца: Артикул (lbl_article, article_edit), Наименование (lbl_name, name_edit), Категория (lbl_category, category_combo editable), Описание (lbl_desc, desc_edit), Производитель (lbl_manuf, manuf_combo), Поставщик (lbl_supp, supp_edit), Цена (lbl_price, price_spin 0–999999, 2 знака), Ед. изм. (lbl_unit, unit_edit), Кол-во (lbl_qty, qty_spin 0–999999), Скидка % (lbl_discount, discount_spin 0–100, 2 знака). У всех подписей wordWrap: true.
+     — Внизу — QHBoxLayout кнопок: btn_save «Сохранить», btn_cancel «Отмена». Всё в одной группе «Данные товара», внутри неё подгруппа «Фото» и форма.
+
+ЭТОЙ ПОСЛЕДОВАТЕЛЬНОСТИ ДОСТАТОЧНО:
+— идёте сверху вниз по списку файлов,
+— в Qt Designer создаёте окно нужного типа,
+— расставляете виджеты с указанными objectName,
+— сохраняете под указанным именем ui-файла.
+
