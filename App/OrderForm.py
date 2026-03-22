@@ -2,10 +2,11 @@
 from datetime import date
 
 from PySide6.QtCore import Signal, QDate
+from PySide6.QtWidgets import QMessageBox
 from PySide6.QtUiTools import loadUiType
 
 from App.config import ui_path
-from App.db import get_order_by_id, get_order_statuses, get_pickup_points, save_order
+from App.db import format_order_items_line, get_order_by_id, get_order_statuses, get_pickup_points, save_order
 
 Ui_OrderForm, BaseOrderForm = loadUiType(ui_path("order"))
 
@@ -40,8 +41,7 @@ class OrderForm(BaseOrderForm, Ui_OrderForm):
         if self.edit:
             o = get_order_by_id(self.order_id)
             self.id_edit.setText(str(o["id"]))
-            t = (o.get("order_article_text") or "").strip() or o.get("product_article") or ""
-            self.article_edit.setText(t)
+            self.article_edit.setPlainText(format_order_items_line(o.get("items") or []))
             self.receiver_edit.setText(str(o.get("receiver_code") or ""))
             self._uid = o.get("user_id")
             self.client_edit.setText(str(o.get("client_name") or ""))
@@ -60,17 +60,21 @@ class OrderForm(BaseOrderForm, Ui_OrderForm):
                     w.setDate(QDate(d.year, d.month, d.day))
 
     def _save(self):
-        save_order(
-            self.order_id if self.edit else None,
-            {
-                "status_name": self.status_combo.currentText().strip(),
-                "pickup_point_id": self.pickup_combo.currentData(),
-                "product_article": self.article_edit.text().strip(),
-                "order_date": self.order_date_edit.date().toPython(),
-                "delivery_date": self.delivery_date_edit.date().toPython(),
-                "receiver_code": self.receiver_edit.text().strip() or None,
-                "user_id": self._uid if self.edit else None,
-            },
-        )
+        try:
+            save_order(
+                self.order_id if self.edit else None,
+                {
+                    "status_name": self.status_combo.currentText().strip(),
+                    "pickup_point_id": self.pickup_combo.currentData(),
+                    "product_article": self.article_edit.toPlainText().strip(),
+                    "order_date": self.order_date_edit.date().toPython(),
+                    "delivery_date": self.delivery_date_edit.date().toPython(),
+                    "receiver_code": self.receiver_edit.text().strip() or None,
+                    "user_id": self._uid if self.edit else None,
+                },
+            )
+        except ValueError as e:
+            QMessageBox.warning(self, "Заказ", str(e))
+            return
         self.accepted.emit()
         self.accept()

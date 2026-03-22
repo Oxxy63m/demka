@@ -1,3 +1,6 @@
 # requirements.txt
 PySide6>=6.5.0
 psycopg2-binary>=2.9.0
+# import_to_db.py (те же Excel, что в методичке):
+pandas>=2.0.0
+openpyxl>=3.1.0

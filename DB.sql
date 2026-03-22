@@ -54,8 +54,12 @@ CREATE TABLE orders (
     delivery_date DATE,
     pickup_point_id INTEGER REFERENCES pickup_points(pickup_point_id) ON DELETE SET NULL,
     user_id INTEGER REFERENCES users(user_id) ON DELETE SET NULL,
-    product_id INTEGER NOT NULL REFERENCES products(product_id) ON DELETE RESTRICT,
     status_id INTEGER REFERENCES statuses(status_id) ON DELETE SET NULL,
-    order_article_text VARCHAR(500),
     receiver_code VARCHAR(50)
+);
+CREATE TABLE order_items (
+    order_item_id SERIAL PRIMARY KEY,
+    order_id INTEGER NOT NULL REFERENCES orders(order_id) ON DELETE CASCADE,
+    product_id INTEGER NOT NULL REFERENCES products(product_id) ON DELETE RESTRICT,
+    quantity INTEGER NOT NULL DEFAULT 1 CHECK (quantity > 0)
 );

@@ -40,8 +40,6 @@ def auth_user(login, password):
         fetch="one",
         d=True,
     )
-    if row:
-        row["id"] = row["user_id"]
     return row
 
 
@@ -139,20 +137,68 @@ def delete_product(product_id):
     q("DELETE FROM products WHERE product_id=%s", (product_id,))
 
 
-def first_article_from_order_line(text):
-    s = (text or "").strip()
-    if not s:
-        return None
-    parts = [p.strip() for p in s.split(",") if p.strip()]
-    return parts[0] if parts else None
+def parse_order_line_items(text):
+    """Формат как в Excel: артикул, количество, артикул, количество… Количество можно опустить (=1)."""
+    raw = (text or "").replace("\n", ",").replace(";", ",")
+    parts = [p.strip() for p in raw.split(",")]
+    parts = [p for p in parts if p]
+    items = []
+    i = 0
+    while i < len(parts):
+        art = parts[i]
+        i += 1
+        qty = 1
+        if i < len(parts):
+            maybe = parts[i].replace(" ", "").replace("\u00a0", "")
+            if maybe.isdigit() and int(maybe) > 0:
+                qty = int(maybe)
+                i += 1
+        items.append((art, qty))
+    return items
+
+
+def _order_items_for_save(product_article_text):
+    lines = parse_order_line_items(product_article_text)
+    if not lines:
+        raise ValueError("Укажите хотя бы одну позицию: артикул или «артикул, количество» через запятую.")
+    rows = []
+    for art, qty in lines:
+        r = q(
+            "SELECT product_id FROM products WHERE TRIM(article)=%s",
+            (art.strip(),),
+            fetch="one",
+        )
+        if not r:
+            raise ValueError(f"Товар с артикулом «{art}» не найден.")
+        rows.append((r[0], qty))
+    return rows
+
+
+def format_order_items_line(items):
+    """Список dict с article, quantity → строка для поля ввода."""
+    if not items:
+        return ""
+    parts = []
+    for it in items:
+        a = (it.get("article") or "").strip()
+        qv = int(it.get("quantity") or 1)
+        if not a:
+            continue
+        parts.append(f"{a}, {qv}" if qv != 1 else a)
+    return ", ".join(parts)
 
 
 def get_orders_all():
     return q(
         "SELECT o.order_id AS id, o.order_date, o.delivery_date, "
         "pp.pickup_address AS pickup_point_address, "
-        "COALESCE(NULLIF(TRIM(o.order_article_text), ''), p.article) AS article, st.status_name "
-        "FROM orders o JOIN products p ON o.product_id = p.product_id "
+        "COALESCE("
+        "(SELECT STRING_AGG("
+        "p.article || CASE WHEN oi.quantity > 1 THEN ' ×' || oi.quantity::text ELSE '' END, "
+        "', ' ORDER BY oi.order_item_id) "
+        "FROM order_items oi JOIN products p ON p.product_id = oi.product_id "
+        "WHERE oi.order_id = o.order_id), '') AS article, st.status_name "
+        "FROM orders o "
         "LEFT JOIN statuses st ON o.status_id = st.status_id "
         "LEFT JOIN pickup_points pp ON o.pickup_point_id = pp.pickup_point_id "
         "ORDER BY o.order_date DESC, o.order_id DESC",
@@ -162,12 +208,12 @@ def get_orders_all():
 
 
 def get_order_by_id(order_id):
-    return q(
+    row = q(
         "SELECT o.order_id AS id, o.order_date, o.delivery_date, "
-        "pp.pickup_address AS pickup_point_address, p.article AS product_article, "
-        "o.order_article_text, o.receiver_code, o.user_id, u.full_name AS client_name, "
-        "st.status_name, o.product_id, o.pickup_point_id "
-        "FROM orders o JOIN products p ON o.product_id = p.product_id "
+        "pp.pickup_address AS pickup_point_address, "
+        "o.receiver_code, o.user_id, u.full_name AS client_name, "
+        "st.status_name, o.pickup_point_id "
+        "FROM orders o "
         "LEFT JOIN statuses st ON o.status_id = st.status_id "
         "LEFT JOIN pickup_points pp ON o.pickup_point_id = pp.pickup_point_id "
         "LEFT JOIN users u ON o.user_id = u.user_id WHERE o.order_id=%s",
@@ -175,6 +221,17 @@ def get_order_by_id(order_id):
         fetch="one",
         d=True,
     )
+    if not row:
+        return None
+    row["items"] = q(
+        "SELECT oi.product_id, p.article, oi.quantity FROM order_items oi "
+        "JOIN products p ON p.product_id = oi.product_id WHERE oi.order_id=%s "
+        "ORDER BY oi.order_item_id",
+        (order_id,),
+        fetch="all",
+        d=True,
+    )
+    return row
 
 
 def get_order_statuses():
@@ -190,39 +247,44 @@ def get_pickup_points():
 
 
 def save_order(order_id, data):
-    t = data["product_article"].strip()
-    art = t.split(",")[0].strip()
-    product_id = q("SELECT product_id FROM products WHERE TRIM(article)=%s", (art,), fetch="one")[0]
+    t = (data.get("product_article") or "").strip()
+    item_rows = _order_items_for_save(t)
     status_id = _fk("statuses", "status_id", "status_name", data["status_name"])
     uid = data.get("user_id")
-    pid = data.get("pickup_point_id")
+    ppid = data.get("pickup_point_id")
     rc = data.get("receiver_code")
     rc = None if not rc else str(rc).strip() or None
-    row = (
+    head = (
         data["order_date"],
         data["delivery_date"],
-        pid,
+        ppid,
         uid,
-        product_id,
         status_id,
-        t,
         rc,
     )
     with psycopg2.connect(**DB_CONFIG) as conn:
         with conn.cursor() as cur:
             if order_id is None:
                 cur.execute(
-                    "INSERT INTO orders (order_date, delivery_date, pickup_point_id, user_id, product_id, "
-                    "status_id, order_article_text, receiver_code) VALUES (%s,%s,%s,%s,%s,%s,%s,%s) RETURNING order_id",
-                    row,
+                    "INSERT INTO orders (order_date, delivery_date, pickup_point_id, user_id, "
+                    "status_id, receiver_code) VALUES (%s,%s,%s,%s,%s,%s) RETURNING order_id",
+                    head,
                 )
-                return cur.fetchone()[0]
-            cur.execute(
-                "UPDATE orders SET order_date=%s, delivery_date=%s, pickup_point_id=%s, user_id=%s, product_id=%s, "
-                "status_id=%s, order_article_text=%s, receiver_code=%s WHERE order_id=%s",
-                row + (order_id,),
-            )
-            return order_id
+                oid = cur.fetchone()[0]
+            else:
+                cur.execute(
+                    "UPDATE orders SET order_date=%s, delivery_date=%s, pickup_point_id=%s, user_id=%s, "
+                    "status_id=%s, receiver_code=%s WHERE order_id=%s",
+                    head + (order_id,),
+                )
+                oid = order_id
+                cur.execute("DELETE FROM order_items WHERE order_id=%s", (oid,))
+            for product_id, qty in item_rows:
+                cur.execute(
+                    "INSERT INTO order_items (order_id, product_id, quantity) VALUES (%s,%s,%s)",
+                    (oid, product_id, qty),
+                )
+            return oid
 
 
 def delete_order(order_id):
