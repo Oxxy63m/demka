@@ -36,7 +36,6 @@
      <property name="minimumSize"><size><width>180</width><height>0</height></size></property>
      <layout class="QVBoxLayout" name="vl_actions">
       <item><widget class="QLabel" name="discount_label"><property name="minimumSize"><size><width>160</width><height>50</height></size></property><property name="alignment"><set>Qt::AlignCenter</set></property><property name="wordWrap"><bool>true</bool></property></widget></item>
-      <item><widget class="QPushButton" name="btn_order"><property name="text"><string>В заказ</string></property></widget></item>
       <item><widget class="QPushButton" name="btn_delete"><property name="text"><string>Удалить</string></property></widget></item>
      </layout>
     </widget>

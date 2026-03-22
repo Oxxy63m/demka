@@ -1,4 +1,3 @@
-# Точка входа. Запуск: python main.py
 import os
 import sys
 from PySide6.QtWidgets import QApplication
@@ -13,27 +12,38 @@ FONT_SIZE = 16
 BTN_H = 42
 
 
-def main():
-    ph_path = "resources/picture.png"
-    if not os.path.isfile(ph_path):
-        os.makedirs("resources", exist_ok=True)
-        img = QImage(300, 200, QImage.Format.Format_RGB32)
-        img.fill(0xFFC0C0C0)
-        img.save(ph_path)
+def _ensure_placeholder_image():
+    placeholder_path = "resources/picture.png"
+    if os.path.isfile(placeholder_path):
+        return
+    os.makedirs("resources", exist_ok=True)
+    image = QImage(300, 200, QImage.Format.Format_RGB32)
+    image.fill(0xFFC0C0C0)
+    image.save(placeholder_path)
 
-    app = QApplication(sys.argv)
+
+def _setup_app_style(app):
     app.setApplicationName("Система учёта товаров")
     if os.path.isfile(APP_ICON):
         app.setWindowIcon(QIcon(APP_ICON))
-    app.setStyleSheet(f"QWidget{{font-size:{FONT_SIZE}pt;}} QPushButton{{min-height:{BTN_H}px;min-width:100px;}}")
-    app.setFont(QFont("", FONT_SIZE))
+    app.setFont(QFont("Times New Roman", FONT_SIZE))
+    app.setStyleSheet(
+        f"QWidget{{font-size:{FONT_SIZE}pt;}}"
+        f" QPushButton{{min-height:{BTN_H}px;min-width:100px;}}"
+    )
+
+
+def main():
+    _ensure_placeholder_image()
+    app = QApplication(sys.argv)
+    _setup_app_style(app)
 
     while True:
-        w = Login()
-        if w.exec() != Login.DialogCode.Accepted:
+        login_dialog = Login()
+        if login_dialog.exec() != Login.DialogCode.Accepted:
             break
-        win = Main(w.get_user())
-        win.showMaximized()
+        main_window = Main(login_dialog.get_user())
+        main_window.showMaximized()
         app.exec()
     sys.exit(0)
 

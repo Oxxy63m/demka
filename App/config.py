@@ -1,4 +1,3 @@
-# Настройки приложения. Запуск из корня (main.py).
 DATA_DIR = "resources"
 APP_ICON = "resources/icon.ico"
 
@@ -9,7 +8,6 @@ UI = {
     "order": "ui/order_form.ui",
     "prod": "ui/product_form.ui",
     "card": "ui/product_item.ui",
-    "cart": "ui/cart.ui",
 }
 
 DB_CONFIG = {

@@ -1,11 +1,11 @@
-# Форма добавления и редактирования заказа: даты, пункт выдачи, статус, клиент. Разметка — ui/order_form.ui.
 from datetime import date
-from PySide6.QtWidgets import QDialog, QMessageBox
+
+from PySide6.QtWidgets import QMessageBox
 from PySide6.QtCore import Signal, QDate
 from PySide6.QtUiTools import loadUiType
 
 from App.config import UI
-from logic.order_edit import load_order, save_order, get_order_statuses, get_users_list
+from logic.order_edit import load_order, save_order, get_order_statuses
 
 Ui_OrderForm, BaseOrderForm = loadUiType(UI["order"])
 
@@ -16,73 +16,87 @@ class OrderForm(BaseOrderForm, Ui_OrderForm):
     def __init__(self, order_id, parent=None):
         super().__init__(parent)
         self.setupUi(self)
+
         self.order_id = order_id
-        self.is_edit = order_id is not None
+        self.is_edit = bool(order_id)
+        self.user = parent.user
+        self.fixed_user_id = self.user.get("user_id") or self.user.get("id")
+        self.order_user_id = None
+
         self.setWindowTitle("Редактирование заказа" if self.is_edit else "Добавление заказа")
+
+        self._setup_ui()
+        self._connect_signals()
+
+        if self.is_edit:
+            self._load()
+
+    def _setup_ui(self):
         self.pickup_edit.setPlaceholderText("Адрес пункта выдачи")
-        for status_text in get_order_statuses():
-            self.status_combo.addItem(status_text)
-        users_list = get_users_list()
-        for user_record in users_list:
-            self.user_combo.addItem(user_record.get("full_name", ""), user_record.get("user_id"))
-        if not users_list:
-            self.user_combo.addItem("—", None)
-        self.order_date_edit.setCalendarPopup(True)
-        self.order_date_edit.setDate(date.today())
-        self.delivery_date_edit.setCalendarPopup(True)
-        self.delivery_date_edit.setDate(date.today())
+        self.article_edit.setPlaceholderText("Артикул, количество, артикул, количество…")
+
+        self.status_combo.clear()
+        self.status_combo.addItems(get_order_statuses())
+        self.user_combo.hide()
+        self.lbl_user.hide()
+
+        for w in (self.order_date_edit, self.delivery_date_edit):
+            w.setCalendarPopup(True)
+            w.setDate(date.today())
+
         if not self.is_edit:
-            self.id_edit.setVisible(False)
-            self.lbl_id.setVisible(False)
+            self.id_edit.hide()
+            self.lbl_id.hide()
+
+    def _connect_signals(self):
         self.btn_save.clicked.connect(self._save)
         self.btn_cancel.clicked.connect(self.reject)
-        if self.is_edit:
-            self._load_order()
-        else:
-            if self.user_combo.count() and self.user_combo.findData(None) < 0:
-                self.user_combo.setCurrentIndex(0)
 
-    def _load_order(self):
-        try:
-            order = load_order(self.order_id)
-        except Exception as error:
-            QMessageBox.critical(self, "Ошибка", str(error))
+    def _load(self):
+        o = load_order(self.order_id)
+
+        if not o:
             self.reject()
             return
-        if not order:
-            self.reject()
-            return
-        self.id_edit.setText(str(order.get("id", "")))
-        status_index = self.status_combo.findText(order.get("status_name") or "")
-        if status_index >= 0:
-            self.status_combo.setCurrentIndex(status_index)
-        self.pickup_edit.setText(order.get("pickup_point_address") or "")
-        for key, widget in (("order_date", self.order_date_edit), ("delivery_date", self.delivery_date_edit)):
-            val = order.get(key)
-            if val:
-                d = val if hasattr(val, "year") else date.fromisoformat(str(val)[:10])
-                widget.setDate(QDate(d.year, d.month, d.day))
-        user_index = self.user_combo.findData(order.get("user_id"))
-        if user_index >= 0:
-            self.user_combo.setCurrentIndex(user_index)
+
+        self.id_edit.setText(str(o.get("id", "")))
+        self.order_user_id = o.get("user_id")
+        self.pickup_edit.setText(o.get("pickup_point_address") or "")
+        self.article_edit.setText(o.get("pickup_code") or "")
+
+        i = self.status_combo.findText(o.get("status_name") or "")
+        if i >= 0:
+            self.status_combo.setCurrentIndex(i)
+
+        for key, w in (("order_date", self.order_date_edit), ("delivery_date", self.delivery_date_edit)):
+            v = o.get(key)
+            if v:
+                d = date.fromisoformat(str(v)[:10])
+                w.setDate(QDate(d.year, d.month, d.day))
 
     def _save(self):
-        user_id = self.user_combo.currentData()
-        if user_id is None and self.user_combo.count():
-            user_id = self.user_combo.itemData(0)
-        if user_id is None:
-            QMessageBox.warning(self, "Ошибка", "Выберите клиента.")
-            return
+        if self.is_edit:
+            user_id = self.order_user_id
+        else:
+            user_id = self.fixed_user_id
+
+        pickup_code = self.article_edit.text().strip()
+
+        statuses = get_order_statuses()
         data = {
-            "status": self.status_combo.currentText().strip() or get_order_statuses()[0],
+            "status": self.status_combo.currentText().strip() or (statuses[0] if statuses else ""),
             "pickup_point": self.pickup_edit.text().strip(),
+            "pickup_code": pickup_code,
             "order_date": self.order_date_edit.date().toPython(),
             "delivery_date": self.delivery_date_edit.date().toPython(),
             "user_id": user_id,
         }
+
         try:
             save_order(self.order_id if self.is_edit else None, data)
-            self.accepted.emit()
-            self.accept()
-        except Exception as error:
-            QMessageBox.critical(self, "Ошибка", str(error))
+        except ValueError as e:
+            QMessageBox.warning(self, "Код заказа", str(e))
+            return
+
+        self.accepted.emit()
+        self.accept()

@@ -1,4 +1,3 @@
-# Форма товара: загрузка по id, сохранение. Категории и производители из БД.
 from App.db import (
     get_product_by_id as _get_product_by_id,
     get_category_names as _get_category_names,
@@ -25,10 +24,7 @@ def save_product(product_id, data, old_photo_path=None):
     if old_photo_path and old_photo_path != data.get("photo"):
         old_full = os.path.join("resources", old_photo_path)
         if os.path.isfile(old_full):
-            try:
-                os.remove(old_full)
-            except OSError:
-                pass
+            os.remove(old_full)
     if product_id is None:
         _insert_product(data)
     else:

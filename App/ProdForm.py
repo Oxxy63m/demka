@@ -1,6 +1,5 @@
-# Форма добавления и редактирования товара. Разметка — ui/product_form.ui.
 import os
-from PySide6.QtWidgets import QDialog, QFileDialog, QMessageBox
+from PySide6.QtWidgets import QFileDialog, QMessageBox
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtGui import QPixmap, QImage
 from PySide6.QtUiTools import loadUiType
@@ -17,7 +16,8 @@ Ui_ProdForm, BaseProdForm = loadUiType(UI["prod"])
 
 
 def _placeholder_pixmap():
-    return QPixmap("resources/picture.png").scaled(300, 200, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation)
+    pixmap = QPixmap("resources/picture.png")
+    return pixmap.scaled(300, 200, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation)
 
 
 def _save_uploaded_image_to_folder(source_file_path):
@@ -54,12 +54,15 @@ class ProdForm(BaseProdForm, Ui_ProdForm):
         self.unit_edit.setPlaceholderText("шт.")
         self.desc_edit.setMaximumHeight(70)
         self.photo_label.setStyleSheet("border:1px solid #ccc;background:#f0f0f0")
+        self.category_combo.clear()
         self.category_combo.addItem("")
-        for c in get_category_names():
-            self.category_combo.addItem(c)
+        for category_name in get_category_names():
+            self.category_combo.addItem(category_name)
+
+        self.manuf_combo.clear()
         self.manuf_combo.addItem("")
-        for m in get_manufacturer_names():
-            self.manuf_combo.addItem(m)
+        for manufacturer_name in get_manufacturer_names():
+            self.manuf_combo.addItem(manufacturer_name)
         if not self.is_edit:
             self.id_edit.setVisible(False)
             self.lbl_id.setVisible(False)
@@ -72,12 +75,7 @@ class ProdForm(BaseProdForm, Ui_ProdForm):
             self.photo_label.setPixmap(_placeholder_pixmap())
 
     def _load_product(self):
-        try:
-            product = load_product_by_id(self.product_id)
-        except Exception as error:
-            QMessageBox.critical(self, "Ошибка", str(error))
-            self.reject()
-            return
+        product = load_product_by_id(self.product_id)
         if not product:
             self.reject()
             return
@@ -113,9 +111,6 @@ class ProdForm(BaseProdForm, Ui_ProdForm):
 
     def _save(self):
         product_name = self.name_edit.text().strip()
-        if not product_name:
-            QMessageBox.warning(self, "Ошибка", "Введите наименование.")
-            return
         photo = self.old_photo_path
         if self.new_photo_path:
             photo = _save_uploaded_image_to_folder(self.new_photo_path) or photo
@@ -132,27 +127,34 @@ class ProdForm(BaseProdForm, Ui_ProdForm):
             "discount": self.discount_spin.value(),
             "photo": photo,
         }
-        try:
-            save_product_to_db(
-                self.product_id if self.is_edit else None,
-                data,
-                old_photo_path=self.old_photo_path if self.is_edit else None,
-            )
-            self.accepted.emit()
-            self.accept()
-        except Exception as error:
-            QMessageBox.critical(self, "Ошибка", str(error))
+        save_product_to_db(
+            self.product_id if self.is_edit else None,
+            data,
+            old_photo_path=self.old_photo_path if self.is_edit else None,
+        )
+        self.accepted.emit()
+        self.accept()
 
     def _show_photo(self, path=None):
         if self.new_photo_path and os.path.isfile(self.new_photo_path):
             pixmap = QPixmap(self.new_photo_path)
             if not pixmap.isNull():
-                self.photo_label.setPixmap(pixmap.scaled(300, 200, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation))
+                self.photo_label.setPixmap(
+                    pixmap.scaled(300, 200, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation)
+                )
                 return
-        show_path = os.path.join("resources", path) if path else "resources/picture.png"
+
+        if path:
+            show_path = os.path.join("resources", path)
+        else:
+            show_path = "resources/picture.png"
+
         if os.path.isfile(show_path):
             pixmap = QPixmap(show_path)
             if not pixmap.isNull():
-                self.photo_label.setPixmap(pixmap.scaled(300, 200, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation))
+                self.photo_label.setPixmap(
+                    pixmap.scaled(300, 200, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation)
+                )
                 return
+
         self.photo_label.setPixmap(_placeholder_pixmap())

@@ -1,4 +1,3 @@
-# Карточка товара в каталоге. Разметка — ui/product_item.ui.
 import os
 from PySide6.QtWidgets import QFrame, QMenu
 from PySide6.QtCore import Qt, Signal
@@ -18,6 +17,20 @@ def _photo_pixmap(photo_filename, width=300, height=200):
     return pixmap.scaled(width, height, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation)
 
 
+def _calc_price_with_discount(price, discount_percent):
+    if discount_percent:
+        return price * (1 - discount_percent / 100)
+    return price
+
+
+def _format_discount_value(discount_percent):
+    if not discount_percent:
+        return "—"
+    if discount_percent == int(discount_percent):
+        return int(discount_percent)
+    return discount_percent
+
+
 STOCK_ZERO_BG = "#ADD8E6"
 STOCK_ZERO_TEXT = "#003366"
 
@@ -25,7 +38,6 @@ STOCK_ZERO_TEXT = "#003366"
 class Card(BaseCard, Ui_Card):
     clicked = Signal(int)
     delete_requested = Signal(int)
-    add_to_cart = Signal(dict)  # один элемент корзины: product_id, product_name, price, quantity
 
     def __init__(self, product, parent=None, is_admin=False, is_client=False):
         super().__init__(parent)
@@ -37,45 +49,86 @@ class Card(BaseCard, Ui_Card):
         self.setMinimumHeight(200)
         self._fill_card()
         self._apply_highlight()
-        if hasattr(self, "btn_delete"):
-            self.btn_delete.setVisible(self._is_admin)
-            if self._is_admin:
-                self.btn_delete.clicked.connect(lambda: self.delete_requested.emit(self.product_id))
-        if hasattr(self, "btn_order"):
-            self.btn_order.setVisible(self._is_client)
-            if self._is_client:
-                self.btn_order.clicked.connect(self._emit_add_to_cart)
+        self.btn_delete.setVisible(self._is_admin)
+        if self._is_admin:
+            self.btn_delete.clicked.connect(self._on_delete_clicked)
+
+
+    def _on_delete_clicked(self):
+        self.delete_requested.emit(self.product_id)
+
+    def _on_context_edit(self, checked=False):
+        self.clicked.emit(self.product_id)
+
+    def _on_context_delete(self, checked=False):
+        self.delete_requested.emit(self.product_id)
 
     def _fill_card(self):
-        for label_widget in (
-            self.lbl_header, self.lbl_desc_title, self.lbl_desc,
-            self.lbl_manufacturer, self.lbl_supplier, self.lbl_price,
-            self.lbl_unit, self.lbl_stock, self.discount_label,
-        ):
-            label_widget.setWordWrap(True)
+        self.lbl_header.setWordWrap(True)
+        self.lbl_desc_title.setWordWrap(True)
+        self.lbl_desc.setWordWrap(True)
+        self.lbl_manufacturer.setWordWrap(True)
+        self.lbl_supplier.setWordWrap(True)
+        self.lbl_price.setWordWrap(True)
+        self.lbl_unit.setWordWrap(True)
+        self.lbl_stock.setWordWrap(True)
+        self.discount_label.setWordWrap(True)
+
         category_name = (self.product.get("category_name") or "").strip()
         product_name = (self.product.get("product_name") or "").strip()
-        header_text = f"{category_name} | {product_name}" if category_name and product_name else (product_name or category_name or "—")
+        if category_name and product_name:
+            header_text = category_name + " | " + product_name
+        elif product_name:
+            header_text = product_name
+        elif category_name:
+            header_text = category_name
+        else:
+            header_text = "—"
+
         self.lbl_header.setText(header_text)
         self.lbl_header.setStyleSheet("font-weight: bold; font-size: 14pt;")
+
         self.lbl_desc_title.setText("Описание товара:")
+
         description_text = (self.product.get("description") or "").strip()
-        self.lbl_desc.setText(description_text or "—")
-        self.lbl_manufacturer.setText("Производитель: " + (self.product.get("manufacturer_name") or "—"))
-        self.lbl_supplier.setText("Поставщик: " + (self.product.get("supplier_name") or "—"))
+        if description_text:
+            self.lbl_desc.setText(description_text)
+        else:
+            self.lbl_desc.setText("—")
+
+        manufacturer_name = self.product.get("manufacturer_name") or "—"
+        supplier_name = self.product.get("supplier_name") or "—"
+        unit_name = self.product.get("unit_name") or "—"
+        stock_quantity = int(self.product.get("stock_quantity") or 0)
         price_value = float(self.product.get("price") or 0)
         discount_percent = float(self.product.get("discount") or 0)
-        price_with_discount = price_value * (1 - discount_percent / 100) if discount_percent else price_value
+
+        self.lbl_manufacturer.setText("Производитель: " + manufacturer_name)
+        self.lbl_supplier.setText("Поставщик: " + supplier_name)
+        self.lbl_unit.setText("Единица измерения: " + unit_name)
+        self.lbl_stock.setText("Количество на складе: " + str(stock_quantity))
+
+        price_with_discount = _calc_price_with_discount(price_value, discount_percent)
+
         if discount_percent > 0:
-            price_text = f'Цена: <span style="text-decoration:line-through; color:red">{price_value:.2f}</span> <span style="color:black">{price_with_discount:.2f}</span> руб.'
+            price_text = (
+                "Цена: "
+                f'<span style="text-decoration:line-through; color:red">{price_value:.2f}</span> '
+                f"<span style=\"color:black\">{price_with_discount:.2f}</span> руб."
+            )
         else:
             price_text = f"Цена: {price_value:.2f} руб."
+
         self.lbl_price.setText(price_text)
         self.lbl_price.setTextFormat(Qt.TextFormat.RichText)
-        self.lbl_unit.setText("Единица измерения: " + (self.product.get("unit_name") or "—"))
-        self.lbl_stock.setText("Количество на складе: " + str(int(self.product.get("stock_quantity") or 0)))
-        discount_display = int(discount_percent) if discount_percent == int(discount_percent) else discount_percent
-        self.discount_label.setText("Действующая скидка\n\n" + (f"{discount_display} %" if discount_percent else "—"))
+
+        discount_value = _format_discount_value(discount_percent)
+        if discount_value == "—":
+            discount_text = "—"
+        else:
+            discount_text = f"{discount_value} %"
+
+        self.discount_label.setText("Действующая скидка\n\n" + discount_text)
         self.discount_label.setStyleSheet("font-weight: bold; padding: 8px; background: #f8f8f8;")
         self.photo_label.setPixmap(_photo_pixmap(self.product.get("photo")))
         self.photo_label.setStyleSheet("background: #f0f0f0;")
@@ -97,17 +150,6 @@ class Card(BaseCard, Ui_Card):
         else:
             self.setStyleSheet("QFrame#ProductCard { border: 1px solid #ccc; background-color: #fff; }")
 
-    def _emit_add_to_cart(self):
-        price = float(self.product.get("price") or 0)
-        discount = float(self.product.get("discount") or 0)
-        price_with_discount = price * (1 - discount / 100) if discount else price
-        self.add_to_cart.emit({
-            "product_id": self.product_id,
-            "product_name": (self.product.get("product_name") or "").strip() or "—",
-            "price": price_with_discount,
-            "quantity": 1,
-        })
-
     def get_product_id(self):
         return self.product_id
 
@@ -116,10 +158,10 @@ class Card(BaseCard, Ui_Card):
             return
         menu = QMenu(self)
         act_edit = QAction("Редактировать", self)
-        act_edit.triggered.connect(lambda: self.clicked.emit(self.product_id))
+        act_edit.triggered.connect(self._on_context_edit)
         menu.addAction(act_edit)
         act_del = QAction("Удалить", self)
-        act_del.triggered.connect(lambda: self.delete_requested.emit(self.product_id))
+        act_del.triggered.connect(self._on_context_delete)
         menu.addAction(act_del)
         menu.exec(event.globalPos())
 

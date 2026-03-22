@@ -21,13 +21,12 @@
     </item>
     <item>
      <widget class="QTableWidget" name="table">
-      <property name="columnCount"><number>6</number></property>
+      <property name="columnCount"><number>5</number></property>
       <column><property name="text"><string>Артикул заказа</string></property></column>
       <column><property name="text"><string>Статус заказа</string></property></column>
       <column><property name="text"><string>Адрес пункта выдачи</string></property></column>
       <column><property name="text"><string>Дата заказа</string></property></column>
       <column><property name="text"><string>Дата доставки</string></property></column>
-      <column><property name="text"><string>Клиент</string></property></column>
      </widget>
     </item>
    </layout>

@@ -21,7 +21,7 @@ CREATE TABLE units (
     unit_id SERIAL PRIMARY KEY,
     unit_name VARCHAR(100) NOT NULL
 );
-CREATE TABLE order_statuses (
+CREATE TABLE statuses (
     status_id SERIAL PRIMARY KEY,
     status_name VARCHAR(100) NOT NULL UNIQUE
 );
@@ -60,15 +60,12 @@ CREATE TABLE orders (
     pickup_point_id INTEGER REFERENCES pickup_points(pickup_point_id) ON DELETE SET NULL,
     user_id INTEGER NOT NULL REFERENCES users(user_id) ON DELETE RESTRICT,
     pickup_code VARCHAR(50),
-    status_id INTEGER REFERENCES order_statuses(status_id) ON DELETE SET NULL,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT now()
+    status_id INTEGER REFERENCES statuses(status_id) ON DELETE SET NULL
 );
--- Позиции заказа
+-- Позиции заказа (составной PK вместо отдельного order_item_id — меньше столбцов, та же семантика)
 CREATE TABLE order_items (
-    order_item_id SERIAL PRIMARY KEY,
     order_id INTEGER NOT NULL REFERENCES orders(order_id) ON DELETE CASCADE,
     product_id INTEGER NOT NULL REFERENCES products(product_id) ON DELETE RESTRICT,
     quantity INTEGER NOT NULL CHECK (quantity > 0),
-    unit_price NUMERIC(10, 2) NOT NULL CHECK (unit_price >= 0),
-    CONSTRAINT uq_order_product UNIQUE (order_id, product_id)
+    PRIMARY KEY (order_id, product_id)
 );

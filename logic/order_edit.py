@@ -1,31 +1,38 @@
-# Форма заказа: загрузка по id, сохранение; статусы и пользователи — из БД.
 from App.db import (
     get_order_by_id as _get_order_by_id,
     get_order_statuses as _get_order_statuses,
     get_users_list as _get_users_list,
-    insert_order as _insert_order,
-    update_order as _update_order,
+    get_product_id_by_article as _get_product_id_by_article,
+    save_order_with_items as _save_order_with_items,
 )
+
+from logic.order_pickup_code import parse_order_pickup_code
 
 
 def get_order_statuses():
-    """Список статусов заказа для выпадающего списка (из БД)."""
     return _get_order_statuses()
 
 
 def get_users_list():
-    """Возвращает список пользователей (user_id, full_name) для выбора клиента в заказе."""
     return _get_users_list()
 
 
 def load_order(order_id):
-    """Загружает один заказ по id из БД. Возвращает словарь или None."""
     return _get_order_by_id(order_id)
 
 
+def _pickup_code_to_line_items(pickup_code: str) -> list[dict]:
+    """Пары артикул–количество → список для order_items; один артикул дважды — суммируется."""
+    pairs = parse_order_pickup_code(pickup_code)
+    merged: dict[int, int] = {}
+    for article, qty in pairs:
+        pid = _get_product_id_by_article(article)
+        if pid is None:
+            raise ValueError(f'Товар с артикулом «{article}» не найден в каталоге.')
+        merged[pid] = merged.get(pid, 0) + qty
+    return [{"product_id": pid, "quantity": q} for pid, q in merged.items()]
+
+
 def save_order(order_id, data):
-    """Сохраняет заказ: при order_id=None — добавление, иначе обновление. data — даты, пункт выдачи, статус, user_id."""
-    if order_id is None:
-        _insert_order(data)
-    else:
-        _update_order(order_id, data)
+    items = _pickup_code_to_line_items(data.get("pickup_code") or "")
+    _save_order_with_items(order_id, data, items)
