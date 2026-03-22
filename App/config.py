@@ -5,7 +5,8 @@ _ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 
 DATA_DIR = "resources"
 APP_ICON = "resources/icon.ico"
-PLACEHOLDER_PHOTO = os.path.join(_ROOT, "resources", "picture.png")
+RESOURCES_DIR = os.path.join(_ROOT, "resources")
+PLACEHOLDER_PHOTO = os.path.join(RESOURCES_DIR, "picture.png")
 
 UI = {
     "login": "ui/login.ui",
@@ -33,14 +34,26 @@ DB_CONFIG = {
 ROLE_GUEST = "guest"
 ROLE_CLIENT = "client"
 ROLE_MANAGER = "manager"
+# Как в типичной БД (roles.role_name); короткий "admin" тоже поддерживаем в проверках.
 ROLE_ADMINISTRATOR = "administrator"
 
 ROLE_TITLE_RU = {
+    "admin": "Администратор",
     "administrator": "Администратор",
     "manager": "Менеджер",
     "client": "Клиент",
     "guest": "Гость",
 }
+
+
+def is_admin_role(role_name) -> bool:
+    r = str(role_name or "").strip().lower()
+    return r == ROLE_ADMINISTRATOR or r == "admin"
+
+
+def is_manager_or_admin(role_name) -> bool:
+    r = str(role_name or "").strip().lower()
+    return r == ROLE_MANAGER or is_admin_role(r)
 
 
 def role_title_ru(role_name):

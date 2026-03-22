@@ -1,14 +1,24 @@
 # Card.py
 import os
 
-from PySide6.QtWidgets import QFrame, QWidget
-from PySide6.QtCore import Qt, Signal, QSize
+from PySide6.QtWidgets import QWidget
+from PySide6.QtCore import Qt, Signal
 from PySide6.QtGui import QPixmap
 from PySide6.QtUiTools import loadUiType
 
-from App.config import PLACEHOLDER_PHOTO, ui_path
+from App.config import PLACEHOLDER_PHOTO, RESOURCES_DIR, ui_path
 
 Ui_ProductCard, BaseProductCard = loadUiType(ui_path("card"))
+
+_P = "QFrame#ProductCard"
+
+
+def _product_card_stylesheet(card_rule: str) -> str:
+    """Фон/рамка корневой карточки и жирный заголовок; остальное — как в .ui / системной теме."""
+    return (
+        f"{_P} {{ {card_rule} }} "
+        f"{_P} QLabel#lbl_header {{ font-weight: bold; }} "
+    )
 
 
 class Card(BaseProductCard, Ui_ProductCard):
@@ -22,24 +32,14 @@ class Card(BaseProductCard, Ui_ProductCard):
         pid = product.get("product_id")
         self.product_id = int(pid) if pid is not None else None
         self._is_admin = is_admin
+
+        # Нет имени файла в БД или файла в resources → picture.png
+        fn = product.get("photo")
         self._pix = QPixmap()
-
-        self.setObjectName("ProductCard")
-        self.photo_label.setObjectName("photo_label")
-        self.discount_label.setObjectName("discount_label")
-
-        self.main_layout.setStretch(0, 2)
-        self.main_layout.setStretch(1, 5)
-        self.main_layout.setStretch(2, 1)
-        self.photo_label.setMinimumSize(160, 107)
-        self.photo_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.discount_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-
-        raw = product.get("photo")
-        if raw and not isinstance(raw, str):
-            self._pix.loadFromData(bytes(memoryview(raw)))
-        elif isinstance(raw, str) and raw.strip():
-            self._pix = QPixmap(os.path.join("resources", raw.strip()))
+        if isinstance(fn, str) and fn.strip():
+            pth = os.path.join(RESOURCES_DIR, fn.strip())
+            if os.path.isfile(pth):
+                self._pix = QPixmap(pth)
         if self._pix.isNull():
             self._pix = QPixmap(PLACEHOLDER_PHOTO)
 
@@ -60,17 +60,6 @@ class Card(BaseProductCard, Ui_ProductCard):
 
         dv = int(disc) if disc == int(disc) else disc
         self.discount_label.setText("Действующая скидка\n" + (f"{dv} %" if disc else "—"))
-
-        for w in (
-            self.lbl_header,
-            self.lbl_description,
-            self.lbl_manufacturer,
-            self.lbl_supplier,
-            self.lbl_price,
-            self.lbl_unit,
-            self.lbl_stock,
-        ):
-            w.setWordWrap(True)
 
         self._apply_highlight()
         self._set_price_display(price, disc)
@@ -94,44 +83,28 @@ class Card(BaseProductCard, Ui_ProductCard):
     def _apply_highlight(self):
         disc = float(self.product.get("discount") or 0)
         stock = int(self.product.get("stock_quantity") or 0)
-        self.setFrameShape(QFrame.Shape.Box)
-        self.setLineWidth(1)
+        # Метка варианта подсветки; фон карточки — setStyleSheet ниже.
         self._hl = ""
 
         if disc > 15:
             self._hl = "green"
             self.setStyleSheet(
-                "QFrame#ProductCard { border: 2px solid #1e6b3d; background-color: #2E8B57; } "
-                "QFrame#ProductCard QFrame#center_frame, QFrame#ProductCard QFrame#right_discount_frame "
-                "{ background-color: transparent; border: 1px solid #000000; } "
-                "QFrame#ProductCard QLabel { color: #000000; background: transparent; } "
-                "QFrame#ProductCard QLabel#lbl_header { font-weight: bold; } "
-                "QFrame#ProductCard QLabel#photo_label { color: #000000; background: #e0e0e0; border: 1px solid #000000; } "
-                "QFrame#ProductCard QLabel#discount_label { color: #000000; font-weight: bold; } "
-                "QFrame#ProductCard QPushButton { color: #000000; background: #f0f0f0; border: 1px solid #000000; min-height: 34px; } "
+                _product_card_stylesheet(
+                    "background-color: #2E8B57;"
+                )
             )
         elif stock == 0:
             self._hl = "blue"
             self.setStyleSheet(
-                "QFrame#ProductCard { border: 1px solid #003366; background-color: #ADD8E6; } "
-                "QFrame#ProductCard QFrame#center_frame, QFrame#ProductCard QFrame#right_discount_frame "
-                "{ background-color: transparent; border: 1px solid #000000; } "
-                "QFrame#ProductCard QLabel { color: #000000; background: transparent; } "
-                "QFrame#ProductCard QLabel#lbl_header { font-weight: bold; } "
-                "QFrame#ProductCard QLabel#photo_label { color: #000000; background: #d6ecfa; border: 1px solid #000000; } "
-                "QFrame#ProductCard QLabel#discount_label { color: #000000; font-weight: bold; } "
-                "QFrame#ProductCard QPushButton { color: #000000; background: #ffffff; border: 1px solid #000000; min-height: 34px; } "
+                _product_card_stylesheet(
+                    "background-color: #ADD8E6;"
+                )
             )
         else:
             self.setStyleSheet(
-                "QFrame#ProductCard { border: 1px solid #000000; background-color: #ffffff; } "
-                "QFrame#ProductCard QFrame#center_frame, QFrame#ProductCard QFrame#right_discount_frame "
-                "{ background-color: #ffffff; border: 1px solid #000000; } "
-                "QFrame#ProductCard QLabel { color: #000000; } "
-                "QFrame#ProductCard QLabel#lbl_header { font-weight: bold; } "
-                "QFrame#ProductCard QLabel#photo_label { color: #000000; background: #f0f0f0; border: 1px solid #000000; } "
-                "QFrame#ProductCard QLabel#discount_label { font-weight: bold; } "
-                "QFrame#ProductCard QPushButton { color: #000000; min-height: 34px; } "
+                _product_card_stylesheet(
+                    "background-color: #ffffff;"
+                )
             )
 
     def _set_price_display(self, price, disc):
@@ -155,9 +128,6 @@ class Card(BaseProductCard, Ui_ProductCard):
         self.photo_label.setPixmap(
             self._pix.scaled(w, h, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation)
         )
-
-    def sizeHint(self):
-        return QSize(480, 180)
 
     def mousePressEvent(self, e):
         if e.button() == Qt.MouseButton.LeftButton and self.product_id and self._is_admin:

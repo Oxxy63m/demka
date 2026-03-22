@@ -1,25 +1,17 @@
 # ProdForm.py
+import os
+import shutil
+import uuid
+
 from PySide6.QtWidgets import QFileDialog
-from PySide6.QtCore import Qt, Signal, QByteArray, QBuffer, QIODevice
-from PySide6.QtGui import QPixmap, QImage
+from PySide6.QtCore import Qt, Signal
+from PySide6.QtGui import QPixmap
 from PySide6.QtUiTools import loadUiType
 
-from App.config import PLACEHOLDER_PHOTO, ui_path
+from App.config import PLACEHOLDER_PHOTO, RESOURCES_DIR, ui_path
 from App.db import get_category_names, get_manufacturer_names, get_product_by_id, insert_product, update_product
 
 Ui_ProdForm, BaseProdForm = loadUiType(ui_path("prod"))
-
-
-def _img_bytes(path):
-    img = QImage(path)
-    if img.isNull():
-        return None
-    img = img.scaled(300, 200, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation)
-    ba = QByteArray()
-    buf = QBuffer(ba)
-    buf.open(QIODevice.OpenModeFlag.WriteOnly)
-    img.save(buf, "PNG")
-    return ba.data()
 
 
 class ProdForm(BaseProdForm, Ui_ProdForm):
@@ -30,7 +22,7 @@ class ProdForm(BaseProdForm, Ui_ProdForm):
         self.setupUi(self)
         self.product_id = product_id
         self.edit = product_id is not None
-        self.photo_bytes = None
+        self._photo_filename = None
         self.setWindowTitle("Товар" if self.edit else "Новый товар")
 
         self.category_combo.clear()
@@ -64,24 +56,33 @@ class ProdForm(BaseProdForm, Ui_ProdForm):
             self.qty_spin.setValue(int(p.get("stock_quantity") or 0))
             self.discount_spin.setValue(float(p.get("discount") or 0))
             ph = p.get("photo")
-            self.photo_bytes = None if ph is None or isinstance(ph, str) else bytes(memoryview(ph))
-            self._prev(self.photo_bytes)
+            self._photo_filename = ph.strip() if isinstance(ph, str) and ph.strip() else None
+            pth = os.path.join(RESOURCES_DIR, self._photo_filename) if self._photo_filename else None
+            self._show_photo_path(pth)
         else:
-            self._prev(None)
+            self._show_photo_path(None)
 
     def _pick(self):
         path, _ = QFileDialog.getOpenFileName(self, "Фото", "", "Images (*.png *.jpg *.jpeg)")
-        if path:
-            self.photo_bytes = _img_bytes(path)
-            self._prev(self.photo_bytes)
+        if not path:
+            return
+        ext = os.path.splitext(path)[1].lower()
+        if ext not in (".png", ".jpg", ".jpeg"):
+            ext = ".png"
+        new_name = f"prod_{uuid.uuid4().hex[:16]}{ext}"
+        os.makedirs(RESOURCES_DIR, exist_ok=True)
+        dest = os.path.join(RESOURCES_DIR, new_name)
+        shutil.copy2(path, dest)
+        self._photo_filename = new_name
+        self._show_photo_path(dest)
 
-    def _prev(self, data):
-        pix = QPixmap()
-        if data and pix.loadFromData(data):
-            self.photo_label.setPixmap(pix.scaled(300, 200, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation))
-        else:
-            pm = QPixmap(PLACEHOLDER_PHOTO)
-            self.photo_label.setPixmap(pm.scaled(300, 200, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation))
+    def _show_photo_path(self, full_path):
+        pix = QPixmap(full_path) if full_path and os.path.isfile(full_path) else QPixmap()
+        if pix.isNull():
+            pix = QPixmap(PLACEHOLDER_PHOTO)
+        self.photo_label.setPixmap(
+            pix.scaled(300, 200, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation)
+        )
 
     def _save(self):
         d = {
@@ -95,7 +96,7 @@ class ProdForm(BaseProdForm, Ui_ProdForm):
             "unit": self.unit_edit.text().strip() or "шт.",
             "stock_quantity": self.qty_spin.value(),
             "discount": self.discount_spin.value(),
-            "photo": self.photo_bytes,
+            "photo": self._photo_filename,
         }
         if self.edit:
             update_product(self.product_id, d)

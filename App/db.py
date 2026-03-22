@@ -92,6 +92,10 @@ def _fk(table, id_col, name_col, name):
 
 def _vals(data):
     ph = data.get("photo")
+    if ph is not None and not isinstance(ph, str):
+        ph = str(ph).strip() or None
+    elif isinstance(ph, str):
+        ph = ph.strip() or None
     return (
         data.get("product_name"),
         _fk("units", "unit_id", "unit_name", data.get("unit")),
@@ -102,7 +106,7 @@ def _vals(data):
         data.get("discount"),
         data.get("stock_quantity"),
         data.get("description"),
-        psycopg2.Binary(ph) if ph else None,
+        ph,
     )
 
 

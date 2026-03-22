@@ -46,7 +46,7 @@ CREATE TABLE products (
     discount NUMERIC(5, 2) DEFAULT 0 CHECK (discount >= 0 AND discount <= 100),
     stock_quantity INTEGER NOT NULL DEFAULT 0 CHECK (stock_quantity >= 0),
     description TEXT,
-    photo BYTEA
+    photo VARCHAR(500)
 );
 CREATE TABLE orders (
     order_id SERIAL PRIMARY KEY,
