@@ -17,6 +17,11 @@ UI = {
     "card": "ui/product_item.ui",
 }
 
+
+def ui_path(key: str) -> str:
+    """Абсолютный путь к .ui (loadUiType иначе может вернуть None, если cwd не корень проекта)."""
+    return os.path.normpath(os.path.join(_ROOT, UI[key].replace("/", os.sep)))
+
 DB_CONFIG = {
     "host": "localhost",
     "port": 5432,

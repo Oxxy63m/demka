@@ -1,14 +1,14 @@
 # Card.py
 import os
 
-from PySide6.QtWidgets import QFrame
+from PySide6.QtWidgets import QFrame, QWidget
 from PySide6.QtCore import Qt, Signal, QSize
 from PySide6.QtGui import QPixmap
 from PySide6.QtUiTools import loadUiType
 
-from App.config import PLACEHOLDER_PHOTO, UI
+from App.config import PLACEHOLDER_PHOTO, ui_path
 
-Ui_ProductCard, BaseProductCard = loadUiType(UI["card"])
+Ui_ProductCard, BaseProductCard = loadUiType(ui_path("card"))
 
 
 class Card(BaseProductCard, Ui_ProductCard):
@@ -19,7 +19,8 @@ class Card(BaseProductCard, Ui_ProductCard):
         super().__init__(parent)
         self.setupUi(self)
         self.product = product
-        self.product_id = product.get("product_id")
+        pid = product.get("product_id")
+        self.product_id = int(pid) if pid is not None else None
         self._is_admin = is_admin
         self._pix = QPixmap()
 
@@ -76,7 +77,15 @@ class Card(BaseProductCard, Ui_ProductCard):
         self._photo()
         self.btn_delete.setVisible(is_admin)
         if is_admin:
-            self.btn_delete.clicked.connect(lambda: self.delete_requested.emit(self.product_id))
+            self.btn_delete.clicked.connect(
+                lambda: self.delete_requested.emit(self.product_id)
+            )
+            # Дочерние QLabel/QFrame перехватывают мышь; делаем их «прозрачными» для hit-test,
+            # чтобы нажатие дошло до этой QFrame (mousePressEvent). Кнопка «Удалить» не трогаем.
+            for w in self.findChildren(QWidget):
+                if w is not self.btn_delete:
+                    w.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, True)
+            self.setCursor(Qt.CursorShape.PointingHandCursor)
 
     def resizeEvent(self, e):
         super().resizeEvent(e)
@@ -132,8 +141,9 @@ class Card(BaseProductCard, Ui_ProductCard):
             return
         newp = price * (1 - disc / 100)
         self.lbl_price.setTextFormat(Qt.TextFormat.RichText)
+        # По заданию: старая цена — зачёркнутая, красная; новая (со скидкой) — чёрная.
         self.lbl_price.setText(
-            f"Цена: <s style='color:#000000'>{price:.2f}</s> "
+            f"Цена: <s style='color:red'>{price:.2f}</s> "
             f"<span style='color:#000000;font-weight:bold'>{newp:.2f}</span> руб."
         )
 

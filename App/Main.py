@@ -1,13 +1,20 @@
 # Main.py
-from PySide6.QtWidgets import QSizePolicy
 from PySide6.QtCore import Qt
 from PySide6.QtUiTools import loadUiType
 
-from App.config import UI, ROLE_MANAGER, ROLE_ADMINISTRATOR, role_title_ru
+from App.config import ROLE_MANAGER, ROLE_ADMINISTRATOR, role_title_ru, ui_path
+
+
+def _is_admin_role(role: str) -> bool:
+    r = (role or "").strip().lower()
+    if r == ROLE_ADMINISTRATOR:
+        return True
+    # Иные варианты в БД (не используем "admin" in r — вхождение в "manager")
+    return r in ("admin", "администратор")
 from App.db import delete_product, get_products_all, get_supplier_names
 from App.Card import Card
 
-Ui_Main, BaseMain = loadUiType(UI["main"])
+Ui_Main, BaseMain = loadUiType(ui_path("main"))
 
 
 class Main(BaseMain, Ui_Main):
@@ -15,14 +22,13 @@ class Main(BaseMain, Ui_Main):
         super().__init__(parent)
         self.setupUi(self)
         self.user = user
-        self.role = user.get("role_name") or "guest"
+        self.role = str(user.get("role_name") or "guest").strip().lower()
 
         self.setWindowTitle("Список товаров")
         self.lbl_user.setText((user.get("full_name") or "").strip() or "—")
         self.lbl_role.setText(role_title_ru(self.role))
-        self.cards_scroll.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
 
-        is_admin = self.role == ROLE_ADMINISTRATOR
+        is_admin = _is_admin_role(self.role)
         is_mgr = self.role in (ROLE_MANAGER, ROLE_ADMINISTRATOR)
 
         self.btn_add.setVisible(is_admin)
@@ -72,7 +78,7 @@ class Main(BaseMain, Ui_Main):
             if w:
                 w.deleteLater()
 
-        adm = self.role == ROLE_ADMINISTRATOR
+        adm = _is_admin_role(self.role)
         for p in items:
             c = Card(p, is_admin=adm)
             if adm:
@@ -85,7 +91,6 @@ class Main(BaseMain, Ui_Main):
         from App.Orders import Orders
 
         w = Orders(self.user, parent=self)
-        w.setWindowModality(Qt.WindowModality.WindowModal)
         w.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose)
         w.showMaximized()
 
@@ -93,7 +98,8 @@ class Main(BaseMain, Ui_Main):
         from App.ProdForm import ProdForm
 
         f = ProdForm(product_id, self)
-        f.setWindowModality(Qt.WindowModality.WindowModal)
         f.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose)
         f.accepted.connect(self._refresh_product_list)
-        f.show()
+        f.showMaximized()
+        f.raise_()
+        f.activateWindow()

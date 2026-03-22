@@ -4,10 +4,10 @@ from datetime import date
 from PySide6.QtCore import Signal, QDate
 from PySide6.QtUiTools import loadUiType
 
-from App.config import UI
+from App.config import ui_path
 from App.db import get_order_by_id, get_order_statuses, get_pickup_points, save_order
 
-Ui_OrderForm, BaseOrderForm = loadUiType(UI["order"])
+Ui_OrderForm, BaseOrderForm = loadUiType(ui_path("order"))
 
 
 class OrderForm(BaseOrderForm, Ui_OrderForm):

@@ -3,9 +3,9 @@ from PySide6.QtWidgets import QFrame
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtUiTools import loadUiType
 
-from App.config import UI
+from App.config import ui_path
 
-Ui_OrderCard, BaseOrderCard = loadUiType(UI["order_card"])
+Ui_OrderCard, BaseOrderCard = loadUiType(ui_path("order_card"))
 
 
 class OrderCard(BaseOrderCard, Ui_OrderCard):

@@ -4,10 +4,10 @@ from PySide6.QtCore import Qt, Signal, QByteArray, QBuffer, QIODevice
 from PySide6.QtGui import QPixmap, QImage
 from PySide6.QtUiTools import loadUiType
 
-from App.config import PLACEHOLDER_PHOTO, UI
+from App.config import PLACEHOLDER_PHOTO, ui_path
 from App.db import get_category_names, get_manufacturer_names, get_product_by_id, insert_product, update_product
 
-Ui_ProdForm, BaseProdForm = loadUiType(UI["prod"])
+Ui_ProdForm, BaseProdForm = loadUiType(ui_path("prod"))
 
 
 def _img_bytes(path):

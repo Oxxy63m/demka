@@ -3,11 +3,11 @@ from PySide6.QtWidgets import QSizePolicy
 from PySide6.QtCore import Qt
 from PySide6.QtUiTools import loadUiType
 
-from App.config import UI, ROLE_ADMINISTRATOR, role_title_ru
+from App.config import ROLE_ADMINISTRATOR, role_title_ru, ui_path
 from App.db import delete_order, get_orders_all
 from App.OrderCard import OrderCard
 
-Ui_Orders, BaseOrders = loadUiType(UI["orders"])
+Ui_Orders, BaseOrders = loadUiType(ui_path("orders"))
 
 
 class Orders(BaseOrders, Ui_Orders):
