@@ -1,22 +1,5 @@
-from App.db import (
-    get_products_all as _get_all,
-    get_supplier_names as _get_supp,
-    product_in_orders as _in_ord,
-    delete_product as _del_prod,
-)
+# product_list.py
+from App.db import delete_product, get_products_all, get_supplier_names
 
-
-def load_products(search_text="", supplier_name=None, order_by_quantity=None):
-    return _get_all(search_text, supplier_name, order_by_quantity)
-
-
-def get_supplier_names():
-    return _get_supp()
-
-
-def product_in_orders(product_id):
-    return _in_ord(product_id)
-
-
-def delete_product(product_id):
-    return _del_prod(product_id)
+load_products = get_products_all
+__all__ = ["delete_product", "get_products_all", "get_supplier_names", "load_products"]

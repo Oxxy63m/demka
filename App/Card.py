@@ -1,171 +1,155 @@
+# Card.py
 import os
-from PySide6.QtWidgets import QFrame, QMenu
-from PySide6.QtCore import Qt, Signal
-from PySide6.QtGui import QPixmap, QAction
+
+from PySide6.QtWidgets import QFrame
+from PySide6.QtCore import Qt, Signal, QSize
+from PySide6.QtGui import QPixmap
 from PySide6.QtUiTools import loadUiType
 
-from App.config import UI
+from App.config import PLACEHOLDER_PHOTO, UI
 
-Ui_Card, BaseCard = loadUiType(UI["card"])
-
-
-def _photo_pixmap(photo_filename, width=300, height=200):
-    path = os.path.join("resources", photo_filename or "picture.png")
-    pixmap = QPixmap(path)
-    if pixmap.isNull():
-        pixmap = QPixmap("resources/picture.png")
-    return pixmap.scaled(width, height, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation)
+Ui_ProductCard, BaseProductCard = loadUiType(UI["card"])
 
 
-def _calc_price_with_discount(price, discount_percent):
-    if discount_percent:
-        return price * (1 - discount_percent / 100)
-    return price
-
-
-def _format_discount_value(discount_percent):
-    if not discount_percent:
-        return "—"
-    if discount_percent == int(discount_percent):
-        return int(discount_percent)
-    return discount_percent
-
-
-STOCK_ZERO_BG = "#ADD8E6"
-STOCK_ZERO_TEXT = "#003366"
-
-
-class Card(BaseCard, Ui_Card):
+class Card(BaseProductCard, Ui_ProductCard):
     clicked = Signal(int)
     delete_requested = Signal(int)
 
-    def __init__(self, product, parent=None, is_admin=False, is_client=False):
+    def __init__(self, product, parent=None, is_admin=False):
         super().__init__(parent)
         self.setupUi(self)
         self.product = product
         self.product_id = product.get("product_id")
         self._is_admin = is_admin
-        self._is_client = is_client
-        self.setMinimumHeight(200)
-        self._fill_card()
+        self._pix = QPixmap()
+
+        self.setObjectName("ProductCard")
+        self.photo_label.setObjectName("photo_label")
+        self.discount_label.setObjectName("discount_label")
+
+        self.main_layout.setStretch(0, 2)
+        self.main_layout.setStretch(1, 5)
+        self.main_layout.setStretch(2, 1)
+        self.photo_label.setMinimumSize(160, 107)
+        self.photo_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.discount_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+
+        raw = product.get("photo")
+        if raw and not isinstance(raw, str):
+            self._pix.loadFromData(bytes(memoryview(raw)))
+        elif isinstance(raw, str) and raw.strip():
+            self._pix = QPixmap(os.path.join("resources", raw.strip()))
+        if self._pix.isNull():
+            self._pix = QPixmap(PLACEHOLDER_PHOTO)
+
+        cat = (product.get("category_name") or "").strip()
+        name = (product.get("product_name") or "").strip()
+        self.lbl_header.setText(f"{cat} | {name}" if cat and name else (name or cat or "—"))
+
+        d = (product.get("description") or "").strip()
+        self.lbl_description.setText("Описание товара: " + (d or "—"))
+        self.lbl_manufacturer.setText("Производитель: " + str(product.get("manufacturer_name") or "—"))
+        self.lbl_supplier.setText("Поставщик: " + str(product.get("supplier_name") or "—"))
+
+        price = float(product.get("price") or 0)
+        disc = float(product.get("discount") or 0)
+
+        self.lbl_unit.setText("Единица измерения: " + str(product.get("unit_name") or "—"))
+        self.lbl_stock.setText("Количество на складе: " + str(int(product.get("stock_quantity") or 0)))
+
+        dv = int(disc) if disc == int(disc) else disc
+        self.discount_label.setText("Действующая скидка\n" + (f"{dv} %" if disc else "—"))
+
+        for w in (
+            self.lbl_header,
+            self.lbl_description,
+            self.lbl_manufacturer,
+            self.lbl_supplier,
+            self.lbl_price,
+            self.lbl_unit,
+            self.lbl_stock,
+        ):
+            w.setWordWrap(True)
+
         self._apply_highlight()
-        self.btn_delete.setVisible(self._is_admin)
-        if self._is_admin:
-            self.btn_delete.clicked.connect(self._on_delete_clicked)
+        self._set_price_display(price, disc)
+        self._photo()
+        self.btn_delete.setVisible(is_admin)
+        if is_admin:
+            self.btn_delete.clicked.connect(lambda: self.delete_requested.emit(self.product_id))
 
-
-    def _on_delete_clicked(self):
-        self.delete_requested.emit(self.product_id)
-
-    def _on_context_edit(self, checked=False):
-        self.clicked.emit(self.product_id)
-
-    def _on_context_delete(self, checked=False):
-        self.delete_requested.emit(self.product_id)
-
-    def _fill_card(self):
-        self.lbl_header.setWordWrap(True)
-        self.lbl_desc_title.setWordWrap(True)
-        self.lbl_desc.setWordWrap(True)
-        self.lbl_manufacturer.setWordWrap(True)
-        self.lbl_supplier.setWordWrap(True)
-        self.lbl_price.setWordWrap(True)
-        self.lbl_unit.setWordWrap(True)
-        self.lbl_stock.setWordWrap(True)
-        self.discount_label.setWordWrap(True)
-
-        category_name = (self.product.get("category_name") or "").strip()
-        product_name = (self.product.get("product_name") or "").strip()
-        if category_name and product_name:
-            header_text = category_name + " | " + product_name
-        elif product_name:
-            header_text = product_name
-        elif category_name:
-            header_text = category_name
-        else:
-            header_text = "—"
-
-        self.lbl_header.setText(header_text)
-        self.lbl_header.setStyleSheet("font-weight: bold; font-size: 14pt;")
-
-        self.lbl_desc_title.setText("Описание товара:")
-
-        description_text = (self.product.get("description") or "").strip()
-        if description_text:
-            self.lbl_desc.setText(description_text)
-        else:
-            self.lbl_desc.setText("—")
-
-        manufacturer_name = self.product.get("manufacturer_name") or "—"
-        supplier_name = self.product.get("supplier_name") or "—"
-        unit_name = self.product.get("unit_name") or "—"
-        stock_quantity = int(self.product.get("stock_quantity") or 0)
-        price_value = float(self.product.get("price") or 0)
-        discount_percent = float(self.product.get("discount") or 0)
-
-        self.lbl_manufacturer.setText("Производитель: " + manufacturer_name)
-        self.lbl_supplier.setText("Поставщик: " + supplier_name)
-        self.lbl_unit.setText("Единица измерения: " + unit_name)
-        self.lbl_stock.setText("Количество на складе: " + str(stock_quantity))
-
-        price_with_discount = _calc_price_with_discount(price_value, discount_percent)
-
-        if discount_percent > 0:
-            price_text = (
-                "Цена: "
-                f'<span style="text-decoration:line-through; color:red">{price_value:.2f}</span> '
-                f"<span style=\"color:black\">{price_with_discount:.2f}</span> руб."
-            )
-        else:
-            price_text = f"Цена: {price_value:.2f} руб."
-
-        self.lbl_price.setText(price_text)
-        self.lbl_price.setTextFormat(Qt.TextFormat.RichText)
-
-        discount_value = _format_discount_value(discount_percent)
-        if discount_value == "—":
-            discount_text = "—"
-        else:
-            discount_text = f"{discount_value} %"
-
-        self.discount_label.setText("Действующая скидка\n\n" + discount_text)
-        self.discount_label.setStyleSheet("font-weight: bold; padding: 8px; background: #f8f8f8;")
-        self.photo_label.setPixmap(_photo_pixmap(self.product.get("photo")))
-        self.photo_label.setStyleSheet("background: #f0f0f0;")
+    def resizeEvent(self, e):
+        super().resizeEvent(e)
+        self._photo()
 
     def _apply_highlight(self):
-        discount_percent = float(self.product.get("discount") or 0)
-        stock_quantity = int(self.product.get("stock_quantity") or 0)
+        disc = float(self.product.get("discount") or 0)
+        stock = int(self.product.get("stock_quantity") or 0)
         self.setFrameShape(QFrame.Shape.Box)
         self.setLineWidth(1)
-        if discount_percent > 15:
+        self._hl = ""
+
+        if disc > 15:
+            self._hl = "green"
             self.setStyleSheet(
-                f"QFrame#ProductCard {{ border: 1px solid #1e6b3d; background-color: #2E8B57; }}"
+                "QFrame#ProductCard { border: 2px solid #1e6b3d; background-color: #2E8B57; } "
+                "QFrame#ProductCard QFrame#center_frame, QFrame#ProductCard QFrame#right_discount_frame "
+                "{ background-color: transparent; border: 1px solid #000000; } "
+                "QFrame#ProductCard QLabel { color: #000000; background: transparent; } "
+                "QFrame#ProductCard QLabel#lbl_header { font-weight: bold; } "
+                "QFrame#ProductCard QLabel#photo_label { color: #000000; background: #e0e0e0; border: 1px solid #000000; } "
+                "QFrame#ProductCard QLabel#discount_label { color: #000000; font-weight: bold; } "
+                "QFrame#ProductCard QPushButton { color: #000000; background: #f0f0f0; border: 1px solid #000000; min-height: 34px; } "
             )
-        elif stock_quantity == 0:
+        elif stock == 0:
+            self._hl = "blue"
             self.setStyleSheet(
-                f"QFrame#ProductCard {{ border: 1px solid #003366; background-color: {STOCK_ZERO_BG}; color: {STOCK_ZERO_TEXT}; }} "
-                f"QFrame#ProductCard QLabel {{ color: {STOCK_ZERO_TEXT}; }}"
+                "QFrame#ProductCard { border: 1px solid #003366; background-color: #ADD8E6; } "
+                "QFrame#ProductCard QFrame#center_frame, QFrame#ProductCard QFrame#right_discount_frame "
+                "{ background-color: transparent; border: 1px solid #000000; } "
+                "QFrame#ProductCard QLabel { color: #000000; background: transparent; } "
+                "QFrame#ProductCard QLabel#lbl_header { font-weight: bold; } "
+                "QFrame#ProductCard QLabel#photo_label { color: #000000; background: #d6ecfa; border: 1px solid #000000; } "
+                "QFrame#ProductCard QLabel#discount_label { color: #000000; font-weight: bold; } "
+                "QFrame#ProductCard QPushButton { color: #000000; background: #ffffff; border: 1px solid #000000; min-height: 34px; } "
             )
         else:
-            self.setStyleSheet("QFrame#ProductCard { border: 1px solid #ccc; background-color: #fff; }")
+            self.setStyleSheet(
+                "QFrame#ProductCard { border: 1px solid #000000; background-color: #ffffff; } "
+                "QFrame#ProductCard QFrame#center_frame, QFrame#ProductCard QFrame#right_discount_frame "
+                "{ background-color: #ffffff; border: 1px solid #000000; } "
+                "QFrame#ProductCard QLabel { color: #000000; } "
+                "QFrame#ProductCard QLabel#lbl_header { font-weight: bold; } "
+                "QFrame#ProductCard QLabel#photo_label { color: #000000; background: #f0f0f0; border: 1px solid #000000; } "
+                "QFrame#ProductCard QLabel#discount_label { font-weight: bold; } "
+                "QFrame#ProductCard QPushButton { color: #000000; min-height: 34px; } "
+            )
 
-    def get_product_id(self):
-        return self.product_id
-
-    def contextMenuEvent(self, event):
-        if not self._is_admin or not self.product_id:
+    def _set_price_display(self, price, disc):
+        if disc <= 0:
+            self.lbl_price.setTextFormat(Qt.TextFormat.PlainText)
+            self.lbl_price.setText(f"Цена: {price:.2f} руб.")
             return
-        menu = QMenu(self)
-        act_edit = QAction("Редактировать", self)
-        act_edit.triggered.connect(self._on_context_edit)
-        menu.addAction(act_edit)
-        act_del = QAction("Удалить", self)
-        act_del.triggered.connect(self._on_context_delete)
-        menu.addAction(act_del)
-        menu.exec(event.globalPos())
+        newp = price * (1 - disc / 100)
+        self.lbl_price.setTextFormat(Qt.TextFormat.RichText)
+        self.lbl_price.setText(
+            f"Цена: <s style='color:#000000'>{price:.2f}</s> "
+            f"<span style='color:#000000;font-weight:bold'>{newp:.2f}</span> руб."
+        )
 
-    def mousePressEvent(self, event):
-        if event.button() == Qt.MouseButton.LeftButton and self.product_id:
+    def _photo(self):
+        w, h = max(self.photo_label.width(), 1), max(self.photo_label.height(), 1)
+        if self._pix.isNull():
+            self.photo_label.clear()
+            return
+        self.photo_label.setPixmap(
+            self._pix.scaled(w, h, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation)
+        )
+
+    def sizeHint(self):
+        return QSize(480, 180)
+
+    def mousePressEvent(self, e):
+        if e.button() == Qt.MouseButton.LeftButton and self.product_id and self._is_admin:
             self.clicked.emit(self.product_id)
-        super().mousePressEvent(event)
+        super().mousePressEvent(e)

@@ -1,39 +1,34 @@
-from PySide6.QtWidgets import QMessageBox
+# Login.py
 from PySide6.QtGui import QPixmap
 from PySide6.QtUiTools import loadUiType
 
 from App.config import UI
-from logic.auth import login as do_login, get_guest_user
+from App.db import auth_user
 
 Ui_Login, BaseLogin = loadUiType(UI["login"])
+
+GUEST = {"full_name": "Гость", "role_name": "guest", "role": "guest", "user_id": None}
+
 
 class Login(BaseLogin, Ui_Login):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setupUi(self)
         self.user = None
-        self.setWindowTitle("Вход в систему")
+        self.setWindowTitle("Вход")
         self.password_edit.setEchoMode(self.password_edit.EchoMode.Password)
         self.btn_login.clicked.connect(self._login)
         self.btn_guest.clicked.connect(self._guest)
-        self._show_logo()
-
-    def _show_logo(self):
-        picture = QPixmap("resources/icon.png")
-        self.lbl_logo.setPixmap(picture)
+        self.lbl_logo.setPixmap(QPixmap("resources/icon.png"))
 
     def _login(self):
-        login_text = self.login_edit.text().strip()
-        password_text = self.password_edit.text().strip()
-        user = do_login(login_text, password_text)
-        if user is None:
-            QMessageBox.warning(self, "Ошибка", "Неверный логин или пароль.")
-            return
-        self.user = user
-        self.accept()
+        u = auth_user(self.login_edit.text(), self.password_edit.text())
+        if u:
+            self.user = u
+            self.accept()
 
     def _guest(self):
-        self.user = get_guest_user()
+        self.user = GUEST
         self.accept()
 
     def get_user(self):

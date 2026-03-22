@@ -1,6 +1,4 @@
--- Схема БД в третьей нормальной форме (3НФ)
--- Имена столбцов конкретные: role_name, category_name, supplier_name и т.д.
--- Справочники
+-- DB.sql
 CREATE TABLE roles (
     role_id SERIAL PRIMARY KEY,
     role_name VARCHAR(100) NOT NULL UNIQUE
@@ -29,7 +27,6 @@ CREATE TABLE pickup_points (
     pickup_point_id SERIAL PRIMARY KEY,
     pickup_address VARCHAR(500) NOT NULL
 );
--- Пользователи
 CREATE TABLE users (
     user_id SERIAL PRIMARY KEY,
     full_name VARCHAR(255) NOT NULL,
@@ -37,7 +34,6 @@ CREATE TABLE users (
     user_password VARCHAR(255) NOT NULL,
     role_id INTEGER NOT NULL REFERENCES roles(role_id) ON DELETE RESTRICT
 );
--- Товары
 CREATE TABLE products (
     product_id SERIAL PRIMARY KEY,
     article VARCHAR(50) NOT NULL UNIQUE,
@@ -50,22 +46,16 @@ CREATE TABLE products (
     discount NUMERIC(5, 2) DEFAULT 0 CHECK (discount >= 0 AND discount <= 100),
     stock_quantity INTEGER NOT NULL DEFAULT 0 CHECK (stock_quantity >= 0),
     description TEXT,
-    photo VARCHAR(255)
+    photo BYTEA
 );
--- Заказы
 CREATE TABLE orders (
     order_id SERIAL PRIMARY KEY,
     order_date DATE NOT NULL DEFAULT CURRENT_DATE,
     delivery_date DATE,
     pickup_point_id INTEGER REFERENCES pickup_points(pickup_point_id) ON DELETE SET NULL,
-    user_id INTEGER NOT NULL REFERENCES users(user_id) ON DELETE RESTRICT,
-    pickup_code VARCHAR(50),
-    status_id INTEGER REFERENCES statuses(status_id) ON DELETE SET NULL
-);
--- Позиции заказа (составной PK вместо отдельного order_item_id — меньше столбцов, та же семантика)
-CREATE TABLE order_items (
-    order_id INTEGER NOT NULL REFERENCES orders(order_id) ON DELETE CASCADE,
+    user_id INTEGER REFERENCES users(user_id) ON DELETE SET NULL,
     product_id INTEGER NOT NULL REFERENCES products(product_id) ON DELETE RESTRICT,
-    quantity INTEGER NOT NULL CHECK (quantity > 0),
-    PRIMARY KEY (order_id, product_id)
+    status_id INTEGER REFERENCES statuses(status_id) ON DELETE SET NULL,
+    order_article_text VARCHAR(500),
+    receiver_code VARCHAR(50)
 );

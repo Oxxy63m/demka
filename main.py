@@ -1,7 +1,8 @@
-import os
+# main.py
 import sys
+import os
 from PySide6.QtWidgets import QApplication
-from PySide6.QtGui import QImage, QFont, QIcon
+from PySide6.QtGui import QFont, QIcon
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from App.config import APP_ICON
@@ -12,29 +13,29 @@ FONT_SIZE = 16
 BTN_H = 42
 
 
-def _ensure_placeholder_image():
-    placeholder_path = "resources/picture.png"
-    if os.path.isfile(placeholder_path):
-        return
-    os.makedirs("resources", exist_ok=True)
-    image = QImage(300, 200, QImage.Format.Format_RGB32)
-    image.fill(0xFFC0C0C0)
-    image.save(placeholder_path)
-
-
 def _setup_app_style(app):
     app.setApplicationName("Система учёта товаров")
-    if os.path.isfile(APP_ICON):
-        app.setWindowIcon(QIcon(APP_ICON))
+    app.setWindowIcon(QIcon(APP_ICON))
     app.setFont(QFont("Times New Roman", FONT_SIZE))
+    c = "#000000"
     app.setStyleSheet(
-        f"QWidget{{font-size:{FONT_SIZE}pt;}}"
-        f" QPushButton{{min-height:{BTN_H}px;min-width:100px;}}"
+        f"QWidget{{font-size:{FONT_SIZE}pt;color:{c};}}"
+        f"QLabel{{color:{c};}}"
+        f"QLineEdit{{color:{c};}}"
+        f"QPlainTextEdit{{color:{c};}}"
+        f"QTextEdit{{color:{c};}}"
+        f"QComboBox{{color:{c};}}"
+        f"QComboBox QAbstractItemView{{color:{c};}}"
+        f"QDateEdit{{color:{c};}}"
+        f"QSpinBox,QDoubleSpinBox{{color:{c};}}"
+        f"QTableWidget{{color:{c};gridline-color:#666;}}"
+        f"QHeaderView::section{{color:{c};}}"
+        f"QPushButton{{color:{c};min-height:{BTN_H}px;min-width:100px;}}"
+        f"QDialogButtonBox{{color:{c};}}"
     )
 
 
 def main():
-    _ensure_placeholder_image()
     app = QApplication(sys.argv)
     _setup_app_style(app)
 

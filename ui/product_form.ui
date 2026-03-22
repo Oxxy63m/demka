@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<!-- product_form.ui -->
 <ui version="4.0">
  <class>ProductEditWindow</class>
  <widget class="QDialog" name="ProductEditWindow">

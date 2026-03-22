@@ -1,4 +1,4 @@
-# Python
+# .gitignore
 __pycache__/
 *.py[cod]
 *$py.class
@@ -11,20 +11,11 @@ env/
 .eggs/
 dist/
 build/
-# IDE
 .idea/
 .vscode/
 *.swp
 *.swo
-
-# OS
 .DS_Store
 Thumbs.db
-
-# Локальные данные (раскомментируй, если не хочешь коммитить содержимое)
-# resources/
-# *.xlsx
-
-# Переменные окружения с паролями
 .env
 .env.local

@@ -1,11 +1,18 @@
+# config.py
+import os
+
+_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+
 DATA_DIR = "resources"
 APP_ICON = "resources/icon.ico"
+PLACEHOLDER_PHOTO = os.path.join(_ROOT, "resources", "picture.png")
 
 UI = {
     "login": "ui/login.ui",
     "main": "ui/main.ui",
     "orders": "ui/orders_list.ui",
     "order": "ui/order_form.ui",
+    "order_card": "ui/order_item.ui",
     "prod": "ui/product_form.ui",
     "card": "ui/product_item.ui",
 }
@@ -22,3 +29,16 @@ ROLE_GUEST = "guest"
 ROLE_CLIENT = "client"
 ROLE_MANAGER = "manager"
 ROLE_ADMINISTRATOR = "administrator"
+
+ROLE_TITLE_RU = {
+    "administrator": "Администратор",
+    "manager": "Менеджер",
+    "client": "Клиент",
+    "guest": "Гость",
+}
+
+
+def role_title_ru(role_name):
+    if not role_name:
+        return ROLE_TITLE_RU["guest"]
+    return ROLE_TITLE_RU.get(str(role_name).strip().lower(), str(role_name))

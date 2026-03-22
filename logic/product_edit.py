@@ -1,31 +1,30 @@
+# product_edit.py
 from App.db import (
-    get_product_by_id as _get_product_by_id,
-    get_category_names as _get_category_names,
-    get_manufacturer_names as _get_manufacturer_names,
-    insert_product as _insert_product,
-    update_product as _update_product,
+    get_category_names,
+    get_manufacturer_names,
+    get_product_by_id,
+    insert_product,
+    update_product,
 )
 
 
-def get_category_names():
-    return _get_category_names()
+def load_product(pid):
+    return get_product_by_id(pid)
 
 
-def get_manufacturer_names():
-    return _get_manufacturer_names()
-
-
-def load_product(product_id):
-    return _get_product_by_id(product_id)
-
-
-def save_product(product_id, data, old_photo_path=None):
-    import os
-    if old_photo_path and old_photo_path != data.get("photo"):
-        old_full = os.path.join("resources", old_photo_path)
-        if os.path.isfile(old_full):
-            os.remove(old_full)
-    if product_id is None:
-        _insert_product(data)
+def save_product(pid, data):
+    if pid is None:
+        insert_product(data)
     else:
-        _update_product(product_id, data)
+        update_product(pid, data)
+
+
+__all__ = [
+    "get_category_names",
+    "get_manufacturer_names",
+    "get_product_by_id",
+    "insert_product",
+    "update_product",
+    "load_product",
+    "save_product",
+]
