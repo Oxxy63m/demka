@@ -1,0 +1,148 @@
+<mxfile host="app.diagrams.net" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0" version="29.6.4">
+  <diagram name="Алгоритм разработки" id="0">
+    <mxGraphModel dx="1303" dy="714" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="2" parent="1" style="ellipse;whiteSpace=wrap;html=1;" value="Начало разработки" vertex="1">
+          <mxGeometry height="60" width="200" x="89.91" y="20" as="geometry" />
+        </mxCell>
+        <mxCell id="s0" parent="1" style="rounded=1;whiteSpace=wrap;html=1;" value="Анализ требований" vertex="1">
+          <mxGeometry height="60" width="200" x="89.91" y="120" as="geometry" />
+        </mxCell>
+        <mxCell id="e0" edge="1" parent="1" source="2" style="edgeStyle=orthogonalEdgeStyle;endArrow=block;" target="s0">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="s1" parent="1" style="rounded=1;whiteSpace=wrap;html=1;" value="Проектирование БД" vertex="1">
+          <mxGeometry height="60" width="200" x="89.91" y="200" as="geometry" />
+        </mxCell>
+        <mxCell id="e1" edge="1" parent="1" source="s0" style="edgeStyle=orthogonalEdgeStyle;endArrow=block;" target="s1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="s2" parent="1" style="rounded=1;whiteSpace=wrap;html=1;" value="Создание БД" vertex="1">
+          <mxGeometry height="60" width="200" x="89.91" y="280" as="geometry" />
+        </mxCell>
+        <mxCell id="e2" edge="1" parent="1" source="s1" style="edgeStyle=orthogonalEdgeStyle;endArrow=block;" target="s2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="s3" parent="1" style="rounded=1;whiteSpace=wrap;html=1;" value="Импорт данных" vertex="1">
+          <mxGeometry height="60" width="200" x="89.91" y="360" as="geometry" />
+        </mxCell>
+        <mxCell id="e3" edge="1" parent="1" source="s2" style="edgeStyle=orthogonalEdgeStyle;endArrow=block;" target="s3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="s4" parent="1" style="rounded=1;whiteSpace=wrap;html=1;" value="Разработка всех окон приложения в Qt Designer" vertex="1">
+          <mxGeometry height="60" width="200" x="89.91" y="440" as="geometry" />
+        </mxCell>
+        <mxCell id="e4" edge="1" parent="1" source="s3" style="edgeStyle=orthogonalEdgeStyle;endArrow=block;" target="s4">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="s5" parent="1" style="rounded=1;whiteSpace=wrap;html=1;" value="Подключение БД" vertex="1">
+          <mxGeometry height="60" width="200" x="89.91" y="520" as="geometry" />
+        </mxCell>
+        <mxCell id="e5" edge="1" parent="1" source="s4" style="edgeStyle=orthogonalEdgeStyle;endArrow=block;" target="s5">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="s6" parent="1" style="rounded=1;whiteSpace=wrap;html=1;" value="Реализация логики авторизации" vertex="1">
+          <mxGeometry height="60" width="200" x="89.91" y="600" as="geometry" />
+        </mxCell>
+        <mxCell id="e6" edge="1" parent="1" source="s5" style="edgeStyle=orthogonalEdgeStyle;endArrow=block;" target="s6">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="sS8Wq8Nmy5LGMKCRWZU_-3" edge="1" parent="1" source="s7" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" target="sS8Wq8Nmy5LGMKCRWZU_-2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="s7" parent="1" style="rounded=1;whiteSpace=wrap;html=1;" value="Проверка авторизации" vertex="1">
+          <mxGeometry height="60" width="200" x="89.91" y="690" as="geometry" />
+        </mxCell>
+        <mxCell id="e7" edge="1" parent="1" source="s6" style="edgeStyle=orthogonalEdgeStyle;endArrow=block;" target="s7">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="s8" parent="1" style="rounded=1;whiteSpace=wrap;html=1;" value="Настройка интерфейсов ролей (гость, клиент, менеджер, администратор)" vertex="1">
+          <mxGeometry height="60" width="200" x="89.91" y="900" as="geometry" />
+        </mxCell>
+        <mxCell id="s9" parent="1" style="rounded=1;whiteSpace=wrap;html=1;" value="Реализация функционала работы с товарами (добавление, редактирования, удаление)" vertex="1">
+          <mxGeometry height="60" width="200" x="400" y="120" as="geometry" />
+        </mxCell>
+        <mxCell id="e9" edge="1" parent="1" source="s8" style="edgeStyle=orthogonalEdgeStyle;endArrow=block;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="sS8Wq8Nmy5LGMKCRWZU_-8">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="s10" parent="1" style="rounded=1;whiteSpace=wrap;html=1;" value="&lt;div&gt;Реализация механизма поиска, сортировки, фильтрации&lt;/div&gt;" vertex="1">
+          <mxGeometry height="60" width="200" x="400" y="200" as="geometry" />
+        </mxCell>
+        <mxCell id="e10" edge="1" parent="1" source="s9" style="edgeStyle=orthogonalEdgeStyle;endArrow=block;" target="s10">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="s11" parent="1" style="rounded=1;whiteSpace=wrap;html=1;" value="Реализация функционала работы с заказами (просмотр, добавление, редактирования, удаление)" vertex="1">
+          <mxGeometry height="60" width="200" x="400" y="280" as="geometry" />
+        </mxCell>
+        <mxCell id="e11" edge="1" parent="1" source="s10" style="edgeStyle=orthogonalEdgeStyle;endArrow=block;" target="s11">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="s12" parent="1" style="rounded=1;whiteSpace=wrap;html=1;" value="Реализация обработки исключений" vertex="1">
+          <mxGeometry height="60" width="200" x="400" y="360" as="geometry" />
+        </mxCell>
+        <mxCell id="e12" edge="1" parent="1" source="s11" style="edgeStyle=orthogonalEdgeStyle;endArrow=block;" target="s12">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="s13" parent="1" style="rounded=1;whiteSpace=wrap;html=1;" value="Отладка и тестирование приложения" vertex="1">
+          <mxGeometry height="60" width="200" x="400" y="440" as="geometry" />
+        </mxCell>
+        <mxCell id="e13" edge="1" parent="1" source="s12" style="edgeStyle=orthogonalEdgeStyle;endArrow=block;" target="s13">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="s14" parent="1" style="rounded=1;whiteSpace=wrap;html=1;" value="Подготовка результатов (файлов)" vertex="1">
+          <mxGeometry height="60" width="200" x="400" y="520" as="geometry" />
+        </mxCell>
+        <mxCell id="e14" edge="1" parent="1" source="s13" style="edgeStyle=orthogonalEdgeStyle;endArrow=block;" target="s14">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="lastEdge" edge="1" parent="1" source="s14" style="edgeStyle=orthogonalEdgeStyle;endArrow=block;" target="end">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="end" parent="1" style="ellipse;whiteSpace=wrap;html=1;" value="Завершение разработки" vertex="1">
+          <mxGeometry height="60" width="200" x="400" y="600" as="geometry" />
+        </mxCell>
+        <mxCell id="sS8Wq8Nmy5LGMKCRWZU_-4" edge="1" parent="1" source="sS8Wq8Nmy5LGMKCRWZU_-2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="s8">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="189.91" y="860" />
+              <mxPoint x="189.91" y="860" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="sS8Wq8Nmy5LGMKCRWZU_-5" connectable="0" parent="sS8Wq8Nmy5LGMKCRWZU_-4" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="Да" vertex="1">
+          <mxGeometry relative="1" x="-0.8528" y="-1" as="geometry">
+            <mxPoint x="15" y="17" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="sS8Wq8Nmy5LGMKCRWZU_-6" edge="1" parent="1" source="sS8Wq8Nmy5LGMKCRWZU_-2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="19.909999999999997" y="810" />
+              <mxPoint x="19.909999999999997" y="670" />
+            </Array>
+            <mxPoint x="189.91" y="670" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="sS8Wq8Nmy5LGMKCRWZU_-7" connectable="0" parent="sS8Wq8Nmy5LGMKCRWZU_-6" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="Нет" vertex="1">
+          <mxGeometry relative="1" x="-0.7186" y="2" as="geometry">
+            <mxPoint x="19" y="-12" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="sS8Wq8Nmy5LGMKCRWZU_-2" parent="1" style="rhombus;whiteSpace=wrap;html=1;" value="Пользователь может авторизоваться?" vertex="1">
+          <mxGeometry height="80" width="190" x="94.91" y="770" as="geometry" />
+        </mxCell>
+        <mxCell id="sS8Wq8Nmy5LGMKCRWZU_-8" parent="1" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;" value="1" vertex="1">
+          <mxGeometry height="30" width="30" x="174.91" y="995" as="geometry" />
+        </mxCell>
+        <mxCell id="sS8Wq8Nmy5LGMKCRWZU_-10" edge="1" parent="1" source="sS8Wq8Nmy5LGMKCRWZU_-9" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="s9">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="sS8Wq8Nmy5LGMKCRWZU_-9" parent="1" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;" value="1" vertex="1">
+          <mxGeometry height="30" width="30" x="485" y="50" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
