@@ -7,7 +7,7 @@ from App.db import auth_user
 
 Ui_Login, BaseLogin = loadUiType(ui_path("login"))
 
-GUEST = {"full_name": "Гость", "role_name": "guest", "role": "guest", "user_id": None}
+GUEST = {"full_name": "Гость", "role_name": "guest", "user_role": "guest", "user_id": None}
 
 
 class Login(BaseLogin, Ui_Login):

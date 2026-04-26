@@ -1,65 +1,66 @@
--- DB.sql
-CREATE TABLE roles (
-    role_id SERIAL PRIMARY KEY,
-    role_name VARCHAR(100) NOT NULL UNIQUE
+-- DB.sql (новая схема таблиц)
+create table suppliers(
+    supp_id serial primary key,
+    supp_name varchar(255)
 );
-CREATE TABLE suppliers (
-    supplier_id SERIAL PRIMARY KEY,
-    supplier_name VARCHAR(255) NOT NULL
+
+create table pickup_points(
+    pp_id serial primary key,
+    pp_name varchar(255)
 );
-CREATE TABLE manufacturers (
-    manufacturer_id SERIAL PRIMARY KEY,
-    manufacturer_name VARCHAR(255) NOT NULL
+
+create table categories(
+    categ_id serial primary key,
+    categ_name varchar(255)
 );
-CREATE TABLE categories (
-    category_id SERIAL PRIMARY KEY,
-    category_name VARCHAR(255) NOT NULL
+
+create table statuses(
+    status_id serial primary key,
+    status_name varchar(255)
 );
-CREATE TABLE units (
-    unit_id SERIAL PRIMARY KEY,
-    unit_name VARCHAR(100) NOT NULL
+
+create table users(
+    user_id serial primary key,
+    user_role varchar(255),
+    user_name varchar(255),
+    user_login varchar(255),
+    user_password varchar(255)
 );
-CREATE TABLE statuses (
-    status_id SERIAL PRIMARY KEY,
-    status_name VARCHAR(100) NOT NULL UNIQUE
+
+create table products(
+    product_id serial primary key,
+    product_art  varchar(255),
+    product_name  varchar(255),
+    product_unit varchar(255),
+    product_price numeric(10,2) check(product_price >= 0),
+    supp_id integer,
+    product_manufac varchar(255),
+    categ_id integer,
+    product_discount integer check (product_discount>= 0 and product_discount <= 100),
+    product_stock integer,
+    product_desc  varchar(255),
+    product_photo  varchar(255),
+    foreign key(supp_id) references suppliers(supp_id) on delete restrict,
+    foreign key(categ_id) references categories(categ_id) on delete restrict
 );
-CREATE TABLE pickup_points (
-    pickup_point_id SERIAL PRIMARY KEY,
-    pickup_address VARCHAR(500) NOT NULL
+
+create table orders (
+    order_id serial primary key,
+    order_date date,
+    order_pup_date date,
+    pp_id integer,
+    user_name varchar(255),
+    order_pp_code integer,
+    status_id integer,
+    foreign key(pp_id) references pickup_points(pp_id)  on delete restrict,
+    foreign key(status_id) references statuses(status_id)  on delete restrict
 );
-CREATE TABLE users (
-    user_id SERIAL PRIMARY KEY,
-    full_name VARCHAR(255) NOT NULL,
-    login VARCHAR(255) NOT NULL UNIQUE,
-    user_password VARCHAR(255) NOT NULL,
-    role_id INTEGER NOT NULL REFERENCES roles(role_id) ON DELETE RESTRICT
-);
-CREATE TABLE products (
-    product_id SERIAL PRIMARY KEY,
-    article VARCHAR(50) NOT NULL UNIQUE,
-    product_name VARCHAR(255) NOT NULL,
-    unit_id INTEGER REFERENCES units(unit_id) ON DELETE SET NULL,
-    price NUMERIC(10, 2) NOT NULL CHECK (price >= 0),
-    supplier_id INTEGER REFERENCES suppliers(supplier_id) ON DELETE SET NULL,
-    manufacturer_id INTEGER REFERENCES manufacturers(manufacturer_id) ON DELETE SET NULL,
-    category_id INTEGER REFERENCES categories(category_id) ON DELETE SET NULL,
-    discount NUMERIC(5, 2) DEFAULT 0 CHECK (discount >= 0 AND discount <= 100),
-    stock_quantity INTEGER NOT NULL DEFAULT 0 CHECK (stock_quantity >= 0),
-    description TEXT,
-    photo VARCHAR(500)
-);
-CREATE TABLE orders (
-    order_id SERIAL PRIMARY KEY,
-    order_date DATE NOT NULL DEFAULT CURRENT_DATE,
-    delivery_date DATE,
-    pickup_point_id INTEGER REFERENCES pickup_points(pickup_point_id) ON DELETE SET NULL,
-    user_id INTEGER REFERENCES users(user_id) ON DELETE SET NULL,
-    status_id INTEGER REFERENCES statuses(status_id) ON DELETE SET NULL,
-    receiver_code VARCHAR(50)
-);
-CREATE TABLE order_items (
-    order_item_id SERIAL PRIMARY KEY,
-    order_id INTEGER NOT NULL REFERENCES orders(order_id) ON DELETE CASCADE,
-    product_id INTEGER NOT NULL REFERENCES products(product_id) ON DELETE RESTRICT,
-    quantity INTEGER NOT NULL DEFAULT 1 CHECK (quantity > 0)
+
+create table order_items(
+    order_item_id serial primary key,
+    order_id integer,
+    product_id integer,
+    product_quantity integer check(product_quantity > 0),
+    foreign key(order_id) references orders(order_id)  on delete restrict,
+    foreign key(product_id) references products(product_id)  on delete restrict
 );

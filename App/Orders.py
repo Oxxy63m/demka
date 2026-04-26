@@ -15,10 +15,10 @@ class Orders(BaseOrders, Ui_Orders):
         super().__init__(parent)
         self.setupUi(self)
         self.user = user
-        self.role = str(user.get("role_name") or "").strip().lower()
+        self.role = str(user.get("role_name") or user.get("user_role") or "").strip().lower()
         self._sel = None
 
-        self.lbl_user.setText((user.get("full_name") or "").strip() or "—")
+        self.lbl_user.setText((user.get("full_name") or user.get("user_name") or "").strip() or "—")
         self.lbl_role.setText(role_title_ru(self.role))
         adm = is_admin_role(self.role)
         self.btn_add.setVisible(adm)

@@ -9,7 +9,7 @@ from PySide6.QtGui import QPixmap
 from PySide6.QtUiTools import loadUiType
 
 from App.config import PLACEHOLDER_PHOTO, RESOURCES_DIR, ui_path
-from App.db import get_category_names, get_manufacturer_names, get_product_by_id, insert_product, update_product
+from App.db import get_category_names, get_manufacturer_names, get_product_by_id, get_supplier_names, insert_product, update_product
 
 Ui_ProdForm, BaseProdForm = loadUiType(ui_path("prod"))
 
@@ -33,6 +33,8 @@ class ProdForm(BaseProdForm, Ui_ProdForm):
         self.manuf_combo.addItem("")
         for x in get_manufacturer_names():
             self.manuf_combo.addItem(x)
+        # Поставщик — строковое поле; хотя бы покажем известные варианты (tooltip)
+        self.supp_edit.setToolTip("\n".join(get_supplier_names()) if hasattr(self, "supp_edit") else "")
 
         if not self.edit:
             self.id_edit.hide()

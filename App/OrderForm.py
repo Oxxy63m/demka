@@ -43,7 +43,6 @@ class OrderForm(BaseOrderForm, Ui_OrderForm):
             self.id_edit.setText(str(o["id"]))
             self.article_edit.setPlainText(format_order_items_line(o.get("items") or []))
             self.receiver_edit.setText(str(o.get("receiver_code") or ""))
-            self._uid = o.get("user_id")
             self.client_edit.setText(str(o.get("client_name") or ""))
             i = self.status_combo.findText(o.get("status_name") or "")
             if i >= 0:
@@ -70,7 +69,7 @@ class OrderForm(BaseOrderForm, Ui_OrderForm):
                     "order_date": self.order_date_edit.date().toPython(),
                     "delivery_date": self.delivery_date_edit.date().toPython(),
                     "receiver_code": self.receiver_edit.text().strip() or None,
-                    "user_id": self._uid if self.edit else None,
+                    "user_name": self.client_edit.text().strip() or None,
                 },
             )
         except ValueError as e:

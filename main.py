@@ -13,7 +13,7 @@ FONT_SIZE = 16
 BTN_H = 42
 
 
-def _setup_app_style(app):
+def app_style(app):
     app.setApplicationName("Система учёта товаров")
     app.setWindowIcon(QIcon(APP_ICON))
     app.setFont(QFont("Times New Roman", FONT_SIZE))
@@ -37,7 +37,7 @@ def _setup_app_style(app):
 
 def main():
     app = QApplication(sys.argv)
-    _setup_app_style(app)
+    app_style(app)
 
     while True:
         login_dialog = Login()

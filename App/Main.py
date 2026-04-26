@@ -14,10 +14,10 @@ class Main(BaseMain, Ui_Main):
         super().__init__(parent)
         self.setupUi(self)
         self.user = user
-        self.role = str(user.get("role_name") or "guest").strip().lower()
+        self.role = str(user.get("role_name") or user.get("user_role") or "guest").strip().lower()
 
         self.setWindowTitle("Список товаров")
-        self.lbl_user.setText((user.get("full_name") or "").strip() or "—")
+        self.lbl_user.setText((user.get("full_name") or user.get("user_name") or "").strip() or "—")
         self.lbl_role.setText(role_title_ru(self.role))
 
         is_admin = is_admin_role(self.role)

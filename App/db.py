@@ -21,21 +21,22 @@ def _names(sql):
 
 
 SQL_PRODUCTS = (
-    "SELECT p.product_id, p.article, p.product_name, c.category_name, p.description, "
-    "m.manufacturer_name, s.supplier_name, p.price, u.unit_name, p.stock_quantity, p.discount, p.photo "
+    "SELECT p.product_id, p.product_art AS article, p.product_name, "
+    "c.categ_name AS category_name, p.product_desc AS description, "
+    "p.product_manufac AS manufacturer_name, s.supp_name AS supplier_name, "
+    "p.product_price AS price, p.product_unit AS unit_name, "
+    "p.product_stock AS stock_quantity, p.product_discount AS discount, "
+    "p.product_photo AS photo "
     "FROM products p "
-    "LEFT JOIN categories c ON p.category_id = c.category_id "
-    "LEFT JOIN manufacturers m ON p.manufacturer_id = m.manufacturer_id "
-    "LEFT JOIN suppliers s ON p.supplier_id = s.supplier_id "
-    "LEFT JOIN units u ON p.unit_id = u.unit_id"
+    "LEFT JOIN categories c ON p.categ_id = c.categ_id "
+    "LEFT JOIN suppliers s ON p.supp_id = s.supp_id"
 )
 
 
 def auth_user(login, password):
     row = q(
-        "SELECT u.user_id, u.login, u.full_name, r.role_name FROM users u "
-        "JOIN roles r ON u.role_id = r.role_id "
-        "WHERE TRIM(u.login)=%s AND TRIM(u.user_password)=%s",
+        "SELECT u.user_id, u.user_login AS login, u.user_name AS full_name, u.user_role AS role_name "
+        "FROM users u WHERE TRIM(u.user_login)=%s AND TRIM(u.user_password)=%s",
         (login.strip(), password.strip()),
         fetch="one",
         d=True,
@@ -69,15 +70,19 @@ def get_product_by_id(product_id):
 
 
 def get_supplier_names():
-    return _names("SELECT supplier_name FROM suppliers ORDER BY supplier_name")
+    return _names("SELECT supp_name FROM suppliers ORDER BY supp_name")
 
 
 def get_category_names():
-    return _names("SELECT category_name FROM categories ORDER BY category_name")
+    return _names("SELECT categ_name FROM categories ORDER BY categ_name")
 
 
 def get_manufacturer_names():
-    return _names("SELECT manufacturer_name FROM manufacturers ORDER BY manufacturer_name")
+    return _names(
+        "SELECT DISTINCT TRIM(product_manufac) FROM products "
+        "WHERE product_manufac IS NOT NULL AND TRIM(product_manufac) <> '' "
+        "ORDER BY TRIM(product_manufac)"
+    )
 
 
 def _fk(table, id_col, name_col, name):
@@ -85,7 +90,7 @@ def _fk(table, id_col, name_col, name):
     if not name:
         return None
     r = q(f"SELECT {id_col} FROM {table} WHERE {name_col}=%s", (name,), fetch="one")
-    return r[0]
+    return r[0] if r else None
 
 
 def _vals(data):
@@ -96,13 +101,13 @@ def _vals(data):
         ph = ph.strip() or None
     return (
         data.get("product_name"),
-        _fk("units", "unit_id", "unit_name", data.get("unit")),
+        (data.get("unit") or "").strip() or None,
         data.get("price"),
-        _fk("suppliers", "supplier_id", "supplier_name", data.get("supplier")),
-        _fk("manufacturers", "manufacturer_id", "manufacturer_name", data.get("manufacturer")),
-        _fk("categories", "category_id", "category_name", data.get("category")),
-        data.get("discount"),
-        data.get("stock_quantity"),
+        _fk("suppliers", "supp_id", "supp_name", data.get("supplier")),
+        (data.get("manufacturer") or "").strip() or None,
+        _fk("categories", "categ_id", "categ_name", data.get("category")),
+        int(float(data.get("discount") or 0)),
+        int(float(data.get("stock_quantity") or 0)),
         data.get("description"),
         ph,
     )
@@ -113,8 +118,8 @@ def insert_product(data):
     with psycopg2.connect(**DB_CONFIG) as conn:
         with conn.cursor() as cur:
             cur.execute(
-                "INSERT INTO products (article, product_name, unit_id, price, supplier_id, manufacturer_id, "
-                "category_id, discount, stock_quantity, description, photo) "
+                "INSERT INTO products (product_art, product_name, product_unit, product_price, supp_id, "
+                "product_manufac, categ_id, product_discount, product_stock, product_desc, product_photo) "
                 "VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s) RETURNING product_id",
                 (art,) + _vals(data),
             )
@@ -126,8 +131,8 @@ def update_product(product_id, data):
     with psycopg2.connect(**DB_CONFIG) as conn:
         with conn.cursor() as cur:
             cur.execute(
-                "UPDATE products SET article=%s, product_name=%s, unit_id=%s, price=%s, supplier_id=%s, "
-                "manufacturer_id=%s, category_id=%s, discount=%s, stock_quantity=%s, description=%s, photo=%s "
+                "UPDATE products SET product_art=%s, product_name=%s, product_unit=%s, product_price=%s, supp_id=%s, "
+                "product_manufac=%s, categ_id=%s, product_discount=%s, product_stock=%s, product_desc=%s, product_photo=%s "
                 "WHERE product_id=%s",
                 (art,) + _vals(data) + (product_id,),
             )
@@ -164,7 +169,7 @@ def _order_items_for_save(product_article_text):
     rows = []
     for art, qty in lines:
         r = q(
-            "SELECT product_id FROM products WHERE TRIM(article)=%s",
+            "SELECT product_id FROM products WHERE TRIM(product_art)=%s",
             (art.strip(),),
             fetch="one",
         )
@@ -190,17 +195,17 @@ def format_order_items_line(items):
 
 def get_orders_all():
     return q(
-        "SELECT o.order_id AS id, o.order_date, o.delivery_date, "
-        "pp.pickup_address AS pickup_point_address, "
+        "SELECT o.order_id AS id, o.order_date, o.order_pup_date AS delivery_date, "
+        "pp.pp_name AS pickup_point_address, "
         "COALESCE("
         "(SELECT STRING_AGG("
-        "p.article || CASE WHEN oi.quantity > 1 THEN ' ×' || oi.quantity::text ELSE '' END, "
+        "p.product_art || CASE WHEN oi.product_quantity > 1 THEN ' ×' || oi.product_quantity::text ELSE '' END, "
         "', ' ORDER BY oi.order_item_id) "
         "FROM order_items oi JOIN products p ON p.product_id = oi.product_id "
         "WHERE oi.order_id = o.order_id), '') AS article, st.status_name "
         "FROM orders o "
         "LEFT JOIN statuses st ON o.status_id = st.status_id "
-        "LEFT JOIN pickup_points pp ON o.pickup_point_id = pp.pickup_point_id "
+        "LEFT JOIN pickup_points pp ON o.pp_id = pp.pp_id "
         "ORDER BY o.order_date DESC, o.order_id DESC",
         fetch="all",
         d=True,
@@ -209,14 +214,14 @@ def get_orders_all():
 
 def get_order_by_id(order_id):
     row = q(
-        "SELECT o.order_id AS id, o.order_date, o.delivery_date, "
-        "pp.pickup_address AS pickup_point_address, "
-        "o.receiver_code, o.user_id, u.full_name AS client_name, "
-        "st.status_name, o.pickup_point_id "
+        "SELECT o.order_id AS id, o.order_date, o.order_pup_date AS delivery_date, "
+        "pp.pp_name AS pickup_point_address, "
+        "o.order_pp_code AS receiver_code, o.user_name AS client_name, "
+        "st.status_name, o.pp_id AS pickup_point_id "
         "FROM orders o "
         "LEFT JOIN statuses st ON o.status_id = st.status_id "
-        "LEFT JOIN pickup_points pp ON o.pickup_point_id = pp.pickup_point_id "
-        "LEFT JOIN users u ON o.user_id = u.user_id WHERE o.order_id=%s",
+        "LEFT JOIN pickup_points pp ON o.pp_id = pp.pp_id "
+        "WHERE o.order_id=%s",
         (order_id,),
         fetch="one",
         d=True,
@@ -224,7 +229,7 @@ def get_order_by_id(order_id):
     if not row:
         return None
     row["items"] = q(
-        "SELECT oi.product_id, p.article, oi.quantity FROM order_items oi "
+        "SELECT oi.product_id, p.product_art AS article, oi.product_quantity AS quantity FROM order_items oi "
         "JOIN products p ON p.product_id = oi.product_id WHERE oi.order_id=%s "
         "ORDER BY oi.order_item_id",
         (order_id,),
@@ -240,7 +245,7 @@ def get_order_statuses():
 
 def get_pickup_points():
     return q(
-        "SELECT pickup_point_id, pickup_address FROM pickup_points ORDER BY pickup_point_id",
+        "SELECT pp_id AS pickup_point_id, pp_name AS pickup_address FROM pickup_points ORDER BY pp_id",
         fetch="all",
         d=True,
     )
@@ -250,38 +255,42 @@ def save_order(order_id, data):
     t = (data.get("product_article") or "").strip()
     item_rows = _order_items_for_save(t)
     status_id = _fk("statuses", "status_id", "status_name", data["status_name"])
-    uid = data.get("user_id")
     ppid = data.get("pickup_point_id")
     rc = data.get("receiver_code")
-    rc = None if not rc else str(rc).strip() or None
+    rc = None if rc is None else str(rc).strip() or None
+    try:
+        rc_num = int(rc) if rc is not None and rc != "" else None
+    except ValueError:
+        rc_num = None
+    client_name = (data.get("user_name") or "").strip() or None
     head = (
         data["order_date"],
         data["delivery_date"],
         ppid,
-        uid,
+        client_name,
         status_id,
-        rc,
+        rc_num,
     )
     with psycopg2.connect(**DB_CONFIG) as conn:
         with conn.cursor() as cur:
             if order_id is None:
                 cur.execute(
-                    "INSERT INTO orders (order_date, delivery_date, pickup_point_id, user_id, "
-                    "status_id, receiver_code) VALUES (%s,%s,%s,%s,%s,%s) RETURNING order_id",
+                    "INSERT INTO orders (order_date, order_pup_date, pp_id, user_name, "
+                    "status_id, order_pp_code) VALUES (%s,%s,%s,%s,%s,%s) RETURNING order_id",
                     head,
                 )
                 oid = cur.fetchone()[0]
             else:
                 cur.execute(
-                    "UPDATE orders SET order_date=%s, delivery_date=%s, pickup_point_id=%s, user_id=%s, "
-                    "status_id=%s, receiver_code=%s WHERE order_id=%s",
+                    "UPDATE orders SET order_date=%s, order_pup_date=%s, pp_id=%s, user_name=%s, "
+                    "status_id=%s, order_pp_code=%s WHERE order_id=%s",
                     head + (order_id,),
                 )
                 oid = order_id
                 cur.execute("DELETE FROM order_items WHERE order_id=%s", (oid,))
             for product_id, qty in item_rows:
                 cur.execute(
-                    "INSERT INTO order_items (order_id, product_id, quantity) VALUES (%s,%s,%s)",
+                    "INSERT INTO order_items (order_id, product_id, product_quantity) VALUES (%s,%s,%s)",
                     (oid, product_id, qty),
                 )
             return oid

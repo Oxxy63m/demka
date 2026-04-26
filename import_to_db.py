@@ -27,7 +27,7 @@ PATH_PRODUCTS = os.path.join(_DATA, "Tovar.xlsx")
 PATH_ORDERS = os.path.join(_DATA, "Заказ_import.xlsx")
 PATH_POINTS = os.path.join(_DATA, "Пункты выдачи_import.xlsx")
 
-# Роль из Excel → значение в БД (как в roles.role_name)
+# Роль из Excel → значение в БД (users.user_role)
 ROLE = {"администратор": "administrator", "менеджер": "manager", "клиент": "client"}
 
 
@@ -35,52 +35,20 @@ def _cur(conn):
     return conn.cursor()
 
 
-def get_or_create_role_id(conn, role_name: str | None):
-    if not role_name or not str(role_name).strip():
-        return None
-    role_name = str(role_name).strip()
-    cur = _cur(conn)
-    cur.execute("SELECT role_id FROM roles WHERE TRIM(role_name)=%s", (role_name,))
-    r = cur.fetchone()
-    if r:
-        cur.close()
-        return r[0]
-    cur.execute("INSERT INTO roles (role_name) VALUES (%s) RETURNING role_id", (role_name,))
-    rid = cur.fetchone()[0]
-    cur.close()
-    return rid
-
-
 def get_or_create_supplier_id_conn(conn, name):
     if name is None or (isinstance(name, float) and pd.isna(name)) or not str(name).strip():
         return None
     name = str(name).strip()
     cur = _cur(conn)
-    cur.execute("SELECT supplier_id FROM suppliers WHERE TRIM(supplier_name)=%s", (name,))
+    cur.execute("SELECT supp_id FROM suppliers WHERE TRIM(supp_name)=%s", (name,))
     r = cur.fetchone()
     if r:
         cur.close()
         return r[0]
-    cur.execute("INSERT INTO suppliers (supplier_name) VALUES (%s) RETURNING supplier_id", (name,))
+    cur.execute("INSERT INTO suppliers (supp_name) VALUES (%s) RETURNING supp_id", (name,))
     sid = cur.fetchone()[0]
     cur.close()
     return sid
-
-
-def get_or_create_manufacturer_id_conn(conn, name):
-    if name is None or (isinstance(name, float) and pd.isna(name)) or not str(name).strip():
-        return None
-    name = str(name).strip()
-    cur = _cur(conn)
-    cur.execute("SELECT manufacturer_id FROM manufacturers WHERE TRIM(manufacturer_name)=%s", (name,))
-    r = cur.fetchone()
-    if r:
-        cur.close()
-        return r[0]
-    cur.execute("INSERT INTO manufacturers (manufacturer_name) VALUES (%s) RETURNING manufacturer_id", (name,))
-    mid = cur.fetchone()[0]
-    cur.close()
-    return mid
 
 
 def get_or_create_category_id_conn(conn, name):
@@ -88,32 +56,15 @@ def get_or_create_category_id_conn(conn, name):
         return None
     name = str(name).strip()
     cur = _cur(conn)
-    cur.execute("SELECT category_id FROM categories WHERE TRIM(category_name)=%s", (name,))
+    cur.execute("SELECT categ_id FROM categories WHERE TRIM(categ_name)=%s", (name,))
     r = cur.fetchone()
     if r:
         cur.close()
         return r[0]
-    cur.execute("INSERT INTO categories (category_name) VALUES (%s) RETURNING category_id", (name,))
+    cur.execute("INSERT INTO categories (categ_name) VALUES (%s) RETURNING categ_id", (name,))
     cid = cur.fetchone()[0]
     cur.close()
     return cid
-
-
-def get_or_create_unit_id_conn(conn, name):
-    if name is None or (isinstance(name, float) and pd.isna(name)) or not str(name).strip():
-        name = "шт."
-    else:
-        name = str(name).strip()
-    cur = _cur(conn)
-    cur.execute("SELECT unit_id FROM units WHERE TRIM(unit_name)=%s", (name,))
-    r = cur.fetchone()
-    if r:
-        cur.close()
-        return r[0]
-    cur.execute("INSERT INTO units (unit_name) VALUES (%s) RETURNING unit_id", (name,))
-    uid = cur.fetchone()[0]
-    cur.close()
-    return uid
 
 
 def get_or_create_pickup_point_id_conn(conn, address: str | None):
@@ -121,12 +72,12 @@ def get_or_create_pickup_point_id_conn(conn, address: str | None):
         return None
     address = str(address).strip()
     cur = _cur(conn)
-    cur.execute("SELECT pickup_point_id FROM pickup_points WHERE TRIM(pickup_address)=%s", (address,))
+    cur.execute("SELECT pp_id FROM pickup_points WHERE TRIM(pp_name)=%s", (address,))
     r = cur.fetchone()
     if r:
         cur.close()
         return r[0]
-    cur.execute("INSERT INTO pickup_points (pickup_address) VALUES (%s) RETURNING pickup_point_id", (address,))
+    cur.execute("INSERT INTO pickup_points (pp_name) VALUES (%s) RETURNING pp_id", (address,))
     pid = cur.fetchone()[0]
     cur.close()
     return pid
@@ -175,16 +126,15 @@ def import_users(connection, path_to_file):
             continue
         role_ru = str(user_row.get("Роль сотрудника", "клиент") or "клиент").strip().lower()
         role_name = ROLE.get(role_ru, role_ru)
-        role_id = get_or_create_role_id(connection, role_name)
-        if role_id is None:
+        full_name = str(user_row.get("ФИО", "") or "").strip()
+        pwd = str(user_row.get("Пароль", "") or "").strip()
+        # В новой схеме UNIQUE по логину не задан, поэтому делаем руками.
+        cur.execute("SELECT user_id FROM users WHERE TRIM(user_login)=%s", (login,))
+        if cur.fetchone():
             continue
         cur.execute(
-            """
-            INSERT INTO users (full_name, login, user_password, role_id)
-            VALUES (%s, %s, %s, %s)
-            ON CONFLICT (login) DO NOTHING;
-            """,
-            (str(user_row.get("ФИО", "") or ""), login, str(user_row.get("Пароль", "") or ""), role_id),
+            "INSERT INTO users (user_role, user_name, user_login, user_password) VALUES (%s,%s,%s,%s)",
+            (role_name, full_name, login, pwd),
         )
         n += 1
     cur.close()
@@ -219,37 +169,26 @@ def import_products(connection, path_to_file):
             continue
         article = str(article).strip()
         supplier_id = get_or_create_supplier_id_conn(connection, product_row.get("Поставщик"))
-        manufacturer_id = get_or_create_manufacturer_id_conn(connection, product_row.get("Производитель"))
         category_id = get_or_create_category_id_conn(connection, product_row.get("Категория товара"))
-        unit_id = get_or_create_unit_id_conn(connection, product_row.get("Единица измерения") or "шт.")
+        manufacturer = str(product_row.get("Производитель") or "").strip() or None
+        unit_name = str(product_row.get("Единица измерения") or "шт.").strip() or "шт."
         cur.execute(
             """
             INSERT INTO products (
-                article, product_name, unit_id, price, supplier_id, manufacturer_id,
-                category_id, discount, stock_quantity, description, photo
+                product_art, product_name, product_unit, product_price, supp_id,
+                product_manufac, categ_id, product_discount, product_stock, product_desc, product_photo
             )
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-            ON CONFLICT (article) DO UPDATE SET
-                product_name = EXCLUDED.product_name,
-                unit_id = EXCLUDED.unit_id,
-                price = EXCLUDED.price,
-                supplier_id = EXCLUDED.supplier_id,
-                manufacturer_id = EXCLUDED.manufacturer_id,
-                category_id = EXCLUDED.category_id,
-                discount = EXCLUDED.discount,
-                stock_quantity = EXCLUDED.stock_quantity,
-                description = EXCLUDED.description,
-                photo = EXCLUDED.photo;
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s);
             """,
             (
                 article,
                 str(product_name).strip(),
-                unit_id,
+                unit_name,
                 price,
                 supplier_id,
-                manufacturer_id,
+                manufacturer,
                 category_id,
-                discount,
+                int(float(discount or 0)),
                 stock_quantity,
                 product_row.get("Описание товара"),
                 photo_filename,
@@ -290,13 +229,13 @@ def add_order_items_from_excel_row(cur, order_id: int, order_row: pd.Series) -> 
     )
     if line:
         for art, qty in parse_order_line_items(line):
-            cur.execute("SELECT product_id FROM products WHERE TRIM(article)=%s", (art.strip(),))
+            cur.execute("SELECT product_id FROM products WHERE TRIM(product_art)=%s", (art.strip(),))
             r = cur.fetchone()
             if not r:
                 print(f"  заказ {order_id}: артикул «{art}» не найден — позиция пропущена")
                 continue
             cur.execute(
-                "INSERT INTO order_items (order_id, product_id, quantity) VALUES (%s, %s, %s)",
+                "INSERT INTO order_items (order_id, product_id, product_quantity) VALUES (%s, %s, %s)",
                 (order_id, r[0], qty),
             )
             n += 1
@@ -314,7 +253,7 @@ def add_order_items_from_excel_row(cur, order_id: int, order_row: pd.Series) -> 
     if qty < 1:
         qty = 1
     cur.execute(
-        "INSERT INTO order_items (order_id, product_id, quantity) VALUES (%s, %s, %s)",
+        "INSERT INTO order_items (order_id, product_id, product_quantity) VALUES (%s, %s, %s)",
         (order_id, product_id, qty),
     )
     return 1
@@ -338,10 +277,6 @@ def import_orders(connection, path_to_file, pickup_addresses):
         return 0
     df = pd.read_excel(path_to_file)
     cur = _cur(connection)
-    cur.execute("SELECT user_id, full_name FROM users")
-    user_id_by_full_name = {
-        str(full_name).strip().lower(): uid for uid, full_name in cur.fetchall() if full_name
-    }
     imported = 0
     for _, order_row in df.iterrows():
         order_date = pd.to_datetime(order_row["Дата заказа"], errors="coerce")
@@ -350,19 +285,13 @@ def import_orders(connection, path_to_file, pickup_addresses):
             continue
         order_date = order_date.date()
 
-        delivery_date = pd.to_datetime(order_row["Дата доставки"], errors="coerce")
-        delivery_date = delivery_date.date() if not pd.isna(delivery_date) else None
+        pup_date = pd.to_datetime(order_row["Дата доставки"], errors="coerce")
+        pup_date = pup_date.date() if not pd.isna(pup_date) else None
 
-        client_full_name = str(order_row["ФИО авторизированного клиента"]).strip()
-        user_id = user_id_by_full_name.get(client_full_name.lower()) if client_full_name else None
-        if user_id is None and pd.notna(order_row.get("Номер клиента")):
-            try:
-                user_id = int(float(order_row["Номер клиента"]))
-            except (TypeError, ValueError):
-                pass
-        if user_id is None:
-            print(f"Пропуск заказа: клиент не найден ({client_full_name})")
-            continue
+        client_full_name = str(order_row.get("ФИО авторизированного клиента") or "").strip()
+        if not client_full_name:
+            # в новой схеме orders.user_name обязателен по смыслу, но в DDL NULL разрешён — всё равно ставим заглушку
+            client_full_name = "—"
 
         pickup_point_value = order_row["Адрес пункта выдачи"]
         pickup_address_string = None
@@ -386,11 +315,18 @@ def import_orders(connection, path_to_file, pickup_addresses):
 
         cur.execute(
             """
-            INSERT INTO orders (order_date, delivery_date, pickup_point_id, user_id, status_id, receiver_code)
+            INSERT INTO orders (order_date, order_pup_date, pp_id, user_name, order_pp_code, status_id)
             VALUES (%s, %s, %s, %s, %s, %s)
             RETURNING order_id;
             """,
-            (order_date, delivery_date, pickup_point_id, user_id, status_id, receiver_code),
+            (
+                order_date,
+                pup_date,
+                pickup_point_id,
+                client_full_name,
+                int(receiver_code) if receiver_code is not None and receiver_code != "" else None,
+                status_id,
+            ),
         )
         order_id = cur.fetchone()[0]
         k = add_order_items_from_excel_row(cur, order_id, order_row)
