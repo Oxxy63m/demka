@@ -5,8 +5,14 @@ from psycopg2.extras import RealDictCursor
 from App.config import DB_CONFIG
 
 
-def q(sql, params=(), fetch=None, d=False):
-    cf = RealDictCursor if d else None
+def q(sql, params=(), fetch=None, as_dict=False):
+    """
+    Выполняет SQL и (по желанию) возвращает результат.
+
+    - as_dict=False: строки как кортежи (row[0], row[1]...)
+    - as_dict=True: строки как dict (row['col_name'])
+    """
+    cf = RealDictCursor if as_dict else None
     with psycopg2.connect(**DB_CONFIG) as conn:
         with conn.cursor(cursor_factory=cf) as cur:
             cur.execute(sql, params)
@@ -16,8 +22,18 @@ def q(sql, params=(), fetch=None, d=False):
                 return cur.fetchall()
 
 
+def q_one(sql, params=(), as_dict=False):
+    """Одна строка или None."""
+    return q(sql, params, fetch="one", as_dict=as_dict)
+
+
+def q_all(sql, params=(), as_dict=False):
+    """Список строк (возможно пустой)."""
+    return q(sql, params, fetch="all", as_dict=as_dict)
+
+
 def _names(sql):
-    return [r[0] for r in q(sql, fetch="all")]
+    return [r[0] for r in q_all(sql)]
 
 
 SQL_PRODUCTS = (
@@ -34,12 +50,11 @@ SQL_PRODUCTS = (
 
 
 def auth_user(login, password):
-    row = q(
+    row = q_one(
         "SELECT u.user_id, u.user_login AS login, u.user_name AS full_name, u.user_role AS role_name "
         "FROM users u WHERE TRIM(u.user_login)=%s AND TRIM(u.user_password)=%s",
         (login.strip(), password.strip()),
-        fetch="one",
-        d=True,
+        as_dict=True,
     )
     return row
 
@@ -62,11 +77,11 @@ def get_products_all(search_text="", supplier_name=None, order_by_quantity=None)
         sql += " ORDER BY p.stock_quantity DESC"
     else:
         sql += " ORDER BY p.product_id"
-    return q(sql, params, fetch="all", d=True)
+    return q_all(sql, params, as_dict=True)
 
 
 def get_product_by_id(product_id):
-    return q(SQL_PRODUCTS + " WHERE p.product_id = %s", (product_id,), fetch="one", d=True)
+    return q_one(SQL_PRODUCTS + " WHERE p.product_id = %s", (product_id,), as_dict=True)
 
 
 def get_supplier_names():
@@ -89,7 +104,7 @@ def _fk(table, id_col, name_col, name):
     name = (name or "").strip()
     if not name:
         return None
-    r = q(f"SELECT {id_col} FROM {table} WHERE {name_col}=%s", (name,), fetch="one")
+    r = q_one(f"SELECT {id_col} FROM {table} WHERE {name_col}=%s", (name,))
     return r[0] if r else None
 
 
@@ -168,10 +183,9 @@ def _order_items_for_save(product_article_text):
         raise ValueError("Укажите хотя бы одну позицию: артикул или «артикул, количество» через запятую.")
     rows = []
     for art, qty in lines:
-        r = q(
+        r = q_one(
             "SELECT product_id FROM products WHERE TRIM(product_art)=%s",
             (art.strip(),),
-            fetch="one",
         )
         if not r:
             raise ValueError(f"Товар с артикулом «{art}» не найден.")
@@ -194,7 +208,7 @@ def format_order_items_line(items):
 
 
 def get_orders_all():
-    return q(
+    return q_all(
         "SELECT o.order_id AS id, o.order_date, o.order_pup_date AS delivery_date, "
         "pp.pp_name AS pickup_point_address, "
         "COALESCE("
@@ -207,13 +221,12 @@ def get_orders_all():
         "LEFT JOIN statuses st ON o.status_id = st.status_id "
         "LEFT JOIN pickup_points pp ON o.pp_id = pp.pp_id "
         "ORDER BY o.order_date DESC, o.order_id DESC",
-        fetch="all",
-        d=True,
+        as_dict=True,
     )
 
 
 def get_order_by_id(order_id):
-    row = q(
+    row = q_one(
         "SELECT o.order_id AS id, o.order_date, o.order_pup_date AS delivery_date, "
         "pp.pp_name AS pickup_point_address, "
         "o.order_pp_code AS receiver_code, o.user_name AS client_name, "
@@ -223,18 +236,16 @@ def get_order_by_id(order_id):
         "LEFT JOIN pickup_points pp ON o.pp_id = pp.pp_id "
         "WHERE o.order_id=%s",
         (order_id,),
-        fetch="one",
-        d=True,
+        as_dict=True,
     )
     if not row:
         return None
-    row["items"] = q(
+    row["items"] = q_all(
         "SELECT oi.product_id, p.product_art AS article, oi.product_quantity AS quantity FROM order_items oi "
         "JOIN products p ON p.product_id = oi.product_id WHERE oi.order_id=%s "
         "ORDER BY oi.order_item_id",
         (order_id,),
-        fetch="all",
-        d=True,
+        as_dict=True,
     )
     return row
 
@@ -244,10 +255,9 @@ def get_order_statuses():
 
 
 def get_pickup_points():
-    return q(
+    return q_all(
         "SELECT pp_id AS pickup_point_id, pp_name AS pickup_address FROM pickup_points ORDER BY pp_id",
-        fetch="all",
-        d=True,
+        as_dict=True,
     )
 
 
