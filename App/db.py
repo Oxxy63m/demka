@@ -1,87 +1,87 @@
-# db.py
 import psycopg2
+from contextlib import contextmanager
 from psycopg2.extras import RealDictCursor
 
 from App.config import DB_CONFIG
 
 
-def q(sql, params=(), fetch=None, as_dict=False):
-    """
-    Выполняет SQL и (по желанию) возвращает результат.
-
-    - as_dict=False: строки как кортежи (row[0], row[1]...)
-    - as_dict=True: строки как dict (row['col_name'])
-    """
-    cf = RealDictCursor if as_dict else None
+@contextmanager
+def cur_ctx(as_dict: bool = False):
     with psycopg2.connect(**DB_CONFIG) as conn:
-        with conn.cursor(cursor_factory=cf) as cur:
-            cur.execute(sql, params)
-            if fetch == "one":
-                return cur.fetchone()
-            if fetch == "all":
-                return cur.fetchall()
+        with conn.cursor(cursor_factory=RealDictCursor if as_dict else None) as cur:
+            yield cur
 
 
-def q_one(sql, params=(), as_dict=False):
-    """Одна строка или None."""
-    return q(sql, params, fetch="one", as_dict=as_dict)
+def q(sql, params=(), one: bool = False, all: bool = False, as_dict: bool = False):
+    with cur_ctx(as_dict) as cur:
+        cur.execute(sql, params)
+        if one:
+            return cur.fetchone()
+        if all:
+            return cur.fetchall()
 
 
-def q_all(sql, params=(), as_dict=False):
-    """Список строк (возможно пустой)."""
-    return q(sql, params, fetch="all", as_dict=as_dict)
+q_one = lambda *a, **k: q(*a, one=True, **k)
+q_all = lambda *a, **k: q(*a, all=True, **k)
 
 
 def _names(sql):
     return [r[0] for r in q_all(sql)]
 
 
-SQL_PRODUCTS = (
-    "SELECT p.product_id, p.product_art AS article, p.product_name, "
-    "c.categ_name AS category_name, p.product_desc AS description, "
-    "p.product_manufac AS manufacturer_name, s.supp_name AS supplier_name, "
-    "p.product_price AS price, p.product_unit AS unit_name, "
-    "p.product_stock AS stock_quantity, p.product_discount AS discount, "
-    "p.product_photo AS photo "
-    "FROM products p "
-    "LEFT JOIN categories c ON p.categ_id = c.categ_id "
-    "LEFT JOIN suppliers s ON p.supp_id = s.supp_id"
-)
+SQL_PRODUCTS = """
+SELECT p.product_id, p.product_art AS article, p.product_name,
+       c.categ_name AS category_name, p.product_desc AS description,
+       p.product_manufac AS manufacturer_name, s.supp_name AS supplier_name,
+       p.product_price AS price, p.product_unit AS unit_name,
+       p.product_stock AS stock_quantity, p.product_discount AS discount,
+       p.product_photo AS photo
+FROM products p
+LEFT JOIN categories c ON p.categ_id = c.categ_id
+LEFT JOIN suppliers s ON p.supp_id = s.supp_id
+"""
 
 
 def auth_user(login, password):
-    row = q_one(
-        "SELECT u.user_id, u.user_login AS login, u.user_name AS full_name, u.user_role AS role_name "
-        "FROM users u WHERE TRIM(u.user_login)=%s AND TRIM(u.user_password)=%s",
+    return q_one(
+        """SELECT user_id, user_login AS login, user_name AS full_name, user_role AS role_name
+           FROM users WHERE TRIM(user_login)=%s AND TRIM(user_password)=%s""",
         (login.strip(), password.strip()),
         as_dict=True,
     )
-    return row
 
 
-def get_products_all(search_text="", supplier_name=None, order_by_quantity=None):
-    sql, params = SQL_PRODUCTS + " WHERE 1=1", []
+def get_products_all(search_text="", supplier_name=None, order=None):
+    cond, params = [], []
+
     if search_text.strip():
         v = f"%{search_text.strip()}%"
-        sql += (
-            " AND (p.article ILIKE %s OR p.product_name ILIKE %s OR p.description ILIKE %s OR "
-            "c.category_name ILIKE %s OR m.manufacturer_name ILIKE %s OR s.supplier_name ILIKE %s OR u.unit_name ILIKE %s)"
+        cond.append(
+            """(
+                p.product_art ILIKE %s OR p.product_name ILIKE %s OR
+                p.product_desc ILIKE %s OR c.categ_name ILIKE %s OR
+                p.product_manufac ILIKE %s OR s.supp_name ILIKE %s OR
+                p.product_unit ILIKE %s
+            )"""
         )
-        params = [v] * 7
+        params += [v] * 7
+
     if supplier_name:
-        sql += " AND s.supplier_name = %s"
+        cond.append("s.supp_name=%s")
         params.append(supplier_name)
-    if order_by_quantity == "asc":
-        sql += " ORDER BY p.stock_quantity ASC"
-    elif order_by_quantity == "desc":
-        sql += " ORDER BY p.stock_quantity DESC"
-    else:
-        sql += " ORDER BY p.product_id"
+
+    sql = SQL_PRODUCTS + (" WHERE " + " AND ".join(cond) if cond else "")
+
+    sql += " ORDER BY " + {
+        "asc": "p.product_stock ASC",
+        "desc": "p.product_stock DESC",
+    }.get(order, "p.product_id")
+
     return q_all(sql, params, as_dict=True)
 
 
 def get_product_by_id(product_id):
-    return q_one(SQL_PRODUCTS + " WHERE p.product_id = %s", (product_id,), as_dict=True)
+    return q_one(SQL_PRODUCTS + " WHERE p.product_id=%s", (product_id,), as_dict=True)
 
 
 def get_supplier_names():
@@ -109,11 +109,7 @@ def _fk(table, id_col, name_col, name):
 
 
 def _vals(data):
-    ph = data.get("photo")
-    if ph is not None and not isinstance(ph, str):
-        ph = str(ph).strip() or None
-    elif isinstance(ph, str):
-        ph = ph.strip() or None
+    ph = (data.get("photo") or "").strip() or None
     return (
         data.get("product_name"),
         (data.get("unit") or "").strip() or None,
@@ -127,30 +123,33 @@ def _vals(data):
         ph,
     )
 
-
-def insert_product(data):
+def save_product(data, product_id=None):
     art = data["article"].strip()
-    with psycopg2.connect(**DB_CONFIG) as conn:
-        with conn.cursor() as cur:
+    vals = (art,) + _vals(data)
+
+    with cur_ctx() as cur:
+        if product_id:
             cur.execute(
-                "INSERT INTO products (product_art, product_name, product_unit, product_price, supp_id, "
-                "product_manufac, categ_id, product_discount, product_stock, product_desc, product_photo) "
-                "VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s) RETURNING product_id",
-                (art,) + _vals(data),
+                """UPDATE products SET product_art=%s, product_name=%s, product_unit=%s,
+                   product_price=%s, supp_id=%s, product_manufac=%s, categ_id=%s,
+                   product_discount=%s, product_stock=%s, product_desc=%s, product_photo=%s
+                   WHERE product_id=%s""",
+                vals + (product_id,),
+            )
+        else:
+            cur.execute(
+                """INSERT INTO products (product_art, product_name, product_unit, product_price,
+                   supp_id, product_manufac, categ_id, product_discount,
+                   product_stock, product_desc, product_photo)
+                   VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+                   RETURNING product_id""",
+                vals,
             )
             return cur.fetchone()[0]
 
 
-def update_product(product_id, data):
-    art = data["article"].strip()
-    with psycopg2.connect(**DB_CONFIG) as conn:
-        with conn.cursor() as cur:
-            cur.execute(
-                "UPDATE products SET product_art=%s, product_name=%s, product_unit=%s, product_price=%s, supp_id=%s, "
-                "product_manufac=%s, categ_id=%s, product_discount=%s, product_stock=%s, product_desc=%s, product_photo=%s "
-                "WHERE product_id=%s",
-                (art,) + _vals(data) + (product_id,),
-            )
+insert_product = lambda d: save_product(d)
+update_product = lambda i, d: save_product(d, i)
 
 
 def delete_product(product_id):
@@ -159,22 +158,20 @@ def delete_product(product_id):
 
 def parse_order_line_items(text):
     """Формат как в Excel: артикул, количество, артикул, количество… Количество можно опустить (=1)."""
-    raw = (text or "").replace("\n", ",").replace(";", ",")
-    parts = [p.strip() for p in raw.split(",")]
-    parts = [p for p in parts if p]
-    items = []
-    i = 0
+    parts = [
+        p.strip()
+        for p in (text or "").replace("\n", ",").replace(";", ",").split(",")
+        if p.strip()
+    ]
+    res, i = [], 0
     while i < len(parts):
-        art = parts[i]
+        art, qty = parts[i], 1
+        if i + 1 < len(parts) and parts[i + 1].replace(" ", "").isdigit():
+            qty = int(parts[i + 1])
+            i += 1
+        res.append((art, qty))
         i += 1
-        qty = 1
-        if i < len(parts):
-            maybe = parts[i].replace(" ", "").replace("\u00a0", "")
-            if maybe.isdigit() and int(maybe) > 0:
-                qty = int(maybe)
-                i += 1
-        items.append((art, qty))
-    return items
+    return res
 
 
 def _order_items_for_save(product_article_text):
