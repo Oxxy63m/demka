@@ -8,8 +8,12 @@ from App.config import DB_CONFIG
 @contextmanager
 def cur_ctx(as_dict: bool = False):
     with psycopg2.connect(**DB_CONFIG) as conn:
-        with conn.cursor(cursor_factory=RealDictCursor if as_dict else None) as cur:
-            yield cur
+        if as_dict:
+            with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                yield cur
+        else:
+            with conn.cursor() as cur:
+                yield cur
 
 
 def q(sql, params=(), one: bool = False, all: bool = False, as_dict: bool = False):
