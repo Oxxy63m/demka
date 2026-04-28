@@ -16,17 +16,17 @@ def cur_ctx(as_dict: bool = False):
                 yield cur
 
 
-def q(sql, params=(), one: bool = False, all: bool = False, as_dict: bool = False):
+def q(sql, params=(), fetch_one: bool = False, fetch_all: bool = False, as_dict: bool = False):
     with cur_ctx(as_dict) as cur:
         cur.execute(sql, params)
-        if one:
+        if fetch_one:
             return cur.fetchone()
-        if all:
+        if fetch_all:
             return cur.fetchall()
 
 
-q_one = lambda *a, **k: q(*a, one=True, **k)
-q_all = lambda *a, **k: q(*a, all=True, **k)
+q_one = lambda *a, **k: q(*a, fetch_one=True, **k)
+q_all = lambda *a, **k: q(*a, fetch_all=True, **k)
 
 
 def _names(sql):
