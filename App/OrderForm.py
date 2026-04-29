@@ -1,12 +1,16 @@
 # OrderForm.py
 from datetime import date
-
 from PySide6.QtCore import Signal, QDate
-from PySide6.QtWidgets import QMessageBox
 from PySide6.QtUiTools import loadUiType
-
 from App.config import ui_path
-from App.db import format_order_items_line, get_order_by_id, get_order_statuses, get_pickup_points, save_order
+from App.db import (
+    format_order_items_line,
+    get_order_by_id,
+    get_order_statuses,
+    get_pickup_points,
+    insert_order,
+    update_order,
+)
 
 Ui_OrderForm, BaseOrderForm = loadUiType(ui_path("order"))
 
@@ -19,7 +23,6 @@ class OrderForm(BaseOrderForm, Ui_OrderForm):
         self.setupUi(self)
         self.order_id = order_id
         self.edit = bool(order_id)
-        self._uid = None
 
         self.setWindowTitle("Заказ" if self.edit else "Новый заказ")
         self.status_combo.clear()
@@ -59,21 +62,19 @@ class OrderForm(BaseOrderForm, Ui_OrderForm):
                     w.setDate(QDate(d.year, d.month, d.day))
 
     def _save(self):
-        try:
-            save_order(
-                self.order_id if self.edit else None,
-                {
-                    "status_name": self.status_combo.currentText().strip(),
-                    "pickup_point_id": self.pickup_combo.currentData(),
-                    "product_article": self.article_edit.toPlainText().strip(),
-                    "order_date": self.order_date_edit.date().toPython(),
-                    "delivery_date": self.delivery_date_edit.date().toPython(),
-                    "receiver_code": self.receiver_edit.text().strip() or None,
-                    "user_name": self.client_edit.text().strip() or None,
-                },
-            )
-        except ValueError as e:
-            QMessageBox.warning(self, "Заказ", str(e))
-            return
+        data = {
+            "status_name": self.status_combo.currentText().strip(),
+            "pickup_point_id": self.pickup_combo.currentData(),
+            "product_article": self.article_edit.toPlainText().strip(),
+            "order_date": self.order_date_edit.date().toPython(),
+            "delivery_date": self.delivery_date_edit.date().toPython(),
+            "receiver_code": self.receiver_edit.text().strip() or None,
+            "user_name": self.client_edit.text().strip() or None,
+        }
+
+        if self.edit:
+            update_order(self.order_id, data)
+        else:
+            insert_order(data)
         self.accepted.emit()
         self.accept()

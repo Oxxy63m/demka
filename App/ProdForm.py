@@ -1,7 +1,6 @@
 # ProdForm.py
 import os
 import shutil
-import uuid
 
 from PySide6.QtWidgets import QFileDialog
 from PySide6.QtCore import Qt, Signal
@@ -60,26 +59,28 @@ class ProdForm(BaseProdForm, Ui_ProdForm):
             ph = p.get("photo")
             self._photo_filename = ph.strip() if isinstance(ph, str) and ph.strip() else None
             pth = os.path.join(RESOURCES_DIR, self._photo_filename) if self._photo_filename else None
-            self._show_photo_path(pth)
+            pix = QPixmap(pth) if pth and os.path.isfile(pth) else QPixmap()
+            if pix.isNull():
+                pix = QPixmap(PLACEHOLDER_PHOTO)
+            self.photo_label.setPixmap(
+                pix.scaled(300, 200, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation)
+            )
         else:
-            self._show_photo_path(None)
+            pix = QPixmap(PLACEHOLDER_PHOTO)
+            self.photo_label.setPixmap(
+                pix.scaled(300, 200, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation)
+            )
 
     def _pick(self):
         path, _ = QFileDialog.getOpenFileName(self, "Фото", "", "Images (*.png *.jpg *.jpeg)")
         if not path:
             return
-        ext = os.path.splitext(path)[1].lower()
-        if ext not in (".png", ".jpg", ".jpeg"):
-            ext = ".png"
-        new_name = f"prod_{uuid.uuid4().hex[:16]}{ext}"
         os.makedirs(RESOURCES_DIR, exist_ok=True)
+        new_name = os.path.basename(path)
         dest = os.path.join(RESOURCES_DIR, new_name)
         shutil.copy2(path, dest)
         self._photo_filename = new_name
-        self._show_photo_path(dest)
-
-    def _show_photo_path(self, full_path):
-        pix = QPixmap(full_path) if full_path and os.path.isfile(full_path) else QPixmap()
+        pix = QPixmap(dest) if os.path.isfile(dest) else QPixmap()
         if pix.isNull():
             pix = QPixmap(PLACEHOLDER_PHOTO)
         self.photo_label.setPixmap(

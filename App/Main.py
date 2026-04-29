@@ -2,7 +2,7 @@
 from PySide6.QtCore import Qt
 from PySide6.QtUiTools import loadUiType
 
-from App.config import is_admin_role, is_manager_or_admin, role_title_ru, ui_path
+from App.config import role_title_ru, ui_path
 from App.db import delete_product, get_products_all, get_supplier_names
 from App.Card import Card
 
@@ -20,8 +20,8 @@ class Main(BaseMain, Ui_Main):
         self.lbl_user.setText((user.get("full_name") or user.get("user_name") or "").strip() or "—")
         self.lbl_role.setText(role_title_ru(self.role))
 
-        is_admin = is_admin_role(self.role)
-        is_mgr = is_manager_or_admin(self.role)
+        is_admin = self.role in ("administrator", "admin")
+        is_mgr = self.role in ("manager", "administrator", "admin")
 
         self.btn_add.setVisible(is_admin)
         self.btn_orders.setVisible(is_mgr)
@@ -70,7 +70,7 @@ class Main(BaseMain, Ui_Main):
             if w:
                 w.deleteLater()
 
-        adm = is_admin_role(self.role)
+        adm = self.role in ("administrator", "admin")
         for p in items:
             c = Card(p, is_admin=adm)
             if adm:

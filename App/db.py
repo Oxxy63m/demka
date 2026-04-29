@@ -1,45 +1,23 @@
 import psycopg2
-from contextlib import contextmanager
 from psycopg2.extras import RealDictCursor
 
 from App.config import DB_CONFIG
 
 
-@contextmanager
-def cur_ctx(as_dict: bool = False):
-    with psycopg2.connect(**DB_CONFIG) as conn:
-        if as_dict:
-            with conn.cursor(cursor_factory=RealDictCursor) as cur:
-                yield cur
-        else:
-            with conn.cursor() as cur:
-                yield cur
-
-
-def q(sql, params=(), fetch_one: bool = False, fetch_all: bool = False, as_dict: bool = False):
-    with cur_ctx(as_dict) as cur:
-        cur.execute(sql, params)
-        if fetch_one:
-            return cur.fetchone()
-        if fetch_all:
-            return cur.fetchall()
-
-
-q_one = lambda *a, **k: q(*a, fetch_one=True, **k)
-q_all = lambda *a, **k: q(*a, fetch_all=True, **k)
-
-
-def _names(sql):
-    return [r[0] for r in q_all(sql)]
-
-
 SQL_PRODUCTS = """
-SELECT p.product_id, p.product_art AS article, p.product_name,
-       c.categ_name AS category_name, p.product_desc AS description,
-       p.product_manufac AS manufacturer_name, s.supp_name AS supplier_name,
-       p.product_price AS price, p.product_unit AS unit_name,
-       p.product_stock AS stock_quantity, p.product_discount AS discount,
-       p.product_photo AS photo
+SELECT
+    p.product_id,
+    p.product_art AS article,
+    p.product_name,
+    c.categ_name AS category_name,
+    p.product_desc AS description,
+    p.product_manufac AS manufacturer_name,
+    s.supp_name AS supplier_name,
+    p.product_price AS price,
+    p.product_unit AS unit_name,
+    p.product_stock AS stock_quantity,
+    p.product_discount AS discount,
+    p.product_photo AS photo
 FROM products p
 LEFT JOIN categories c ON p.categ_id = c.categ_id
 LEFT JOIN suppliers s ON p.supp_id = s.supp_id
@@ -47,12 +25,20 @@ LEFT JOIN suppliers s ON p.supp_id = s.supp_id
 
 
 def auth_user(login, password):
-    return q_one(
-        """SELECT user_id, user_login AS login, user_name AS full_name, user_role AS role_name
-           FROM users WHERE TRIM(user_login)=%s AND TRIM(user_password)=%s""",
-        (login.strip(), password.strip()),
-        as_dict=True,
-    )
+    with psycopg2.connect(**DB_CONFIG) as conn:
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            cur.execute(
+                """SELECT
+                       user_id,
+                       user_login AS login,
+                       user_name AS full_name,
+                       user_role AS role_name
+                   FROM users
+                   WHERE TRIM(user_login)=%s AND TRIM(user_password)=%s
+                   LIMIT 1""",
+                (login.strip(), password.strip()),
+            )
+            return cur.fetchone()
 
 
 def get_products_all(search_text="", supplier_name=None, order=None):
@@ -81,83 +67,157 @@ def get_products_all(search_text="", supplier_name=None, order=None):
         "desc": "p.product_stock DESC",
     }.get(order, "p.product_id")
 
-    return q_all(sql, params, as_dict=True)
+    with psycopg2.connect(**DB_CONFIG) as conn:
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            cur.execute(sql, params)
+            return cur.fetchall()
 
 
 def get_product_by_id(product_id):
-    return q_one(SQL_PRODUCTS + " WHERE p.product_id=%s", (product_id,), as_dict=True)
+    with psycopg2.connect(**DB_CONFIG) as conn:
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            cur.execute(SQL_PRODUCTS + " WHERE p.product_id=%s", (product_id,))
+            return cur.fetchone()
 
 
 def get_supplier_names():
-    return _names("SELECT supp_name FROM suppliers ORDER BY supp_name")
+    with psycopg2.connect(**DB_CONFIG) as conn:
+        with conn.cursor() as cur:
+            cur.execute("SELECT supp_name FROM suppliers ORDER BY supp_name")
+            return [r[0] for r in cur.fetchall()]
 
 
 def get_category_names():
-    return _names("SELECT categ_name FROM categories ORDER BY categ_name")
+    with psycopg2.connect(**DB_CONFIG) as conn:
+        with conn.cursor() as cur:
+            cur.execute("SELECT categ_name FROM categories ORDER BY categ_name")
+            return [r[0] for r in cur.fetchall()]
 
 
 def get_manufacturer_names():
-    return _names(
-        "SELECT DISTINCT TRIM(product_manufac) FROM products "
-        "WHERE product_manufac IS NOT NULL AND TRIM(product_manufac) <> '' "
-        "ORDER BY TRIM(product_manufac)"
-    )
-
-
-def _fk(table, id_col, name_col, name):
-    name = (name or "").strip()
-    if not name:
-        return None
-    r = q_one(f"SELECT {id_col} FROM {table} WHERE {name_col}=%s", (name,))
-    return r[0] if r else None
-
-
-def _vals(data):
-    ph = (data.get("photo") or "").strip() or None
-    return (
-        data.get("product_name"),
-        (data.get("unit") or "").strip() or None,
-        data.get("price"),
-        _fk("suppliers", "supp_id", "supp_name", data.get("supplier")),
-        (data.get("manufacturer") or "").strip() or None,
-        _fk("categories", "categ_id", "categ_name", data.get("category")),
-        int(float(data.get("discount") or 0)),
-        int(float(data.get("stock_quantity") or 0)),
-        data.get("description"),
-        ph,
-    )
-
-def save_product(data, product_id=None):
-    art = data["article"].strip()
-    vals = (art,) + _vals(data)
-
-    with cur_ctx() as cur:
-        if product_id:
+    with psycopg2.connect(**DB_CONFIG) as conn:
+        with conn.cursor() as cur:
             cur.execute(
-                """UPDATE products SET product_art=%s, product_name=%s, product_unit=%s,
-                   product_price=%s, supp_id=%s, product_manufac=%s, categ_id=%s,
-                   product_discount=%s, product_stock=%s, product_desc=%s, product_photo=%s
-                   WHERE product_id=%s""",
-                vals + (product_id,),
+                "SELECT DISTINCT TRIM(product_manufac) FROM products "
+                "WHERE product_manufac IS NOT NULL AND TRIM(product_manufac) <> '' "
+                "ORDER BY TRIM(product_manufac)"
             )
-        else:
+            return [r[0] for r in cur.fetchall()]
+
+def insert_product(data):
+    art = (data.get("article") or "").strip()
+    name = data.get("product_name")
+    unit = (data.get("unit") or "").strip() or None
+    price = data.get("price")
+    supplier_name = (data.get("supplier") or "").strip()
+    manufacturer = (data.get("manufacturer") or "").strip() or None
+    category_name = (data.get("category") or "").strip()
+    discount = int(float(data.get("discount") or 0))
+    stock_quantity = int(float(data.get("stock_quantity") or 0))
+    description = data.get("description")
+    photo = (data.get("photo") or "").strip() or None
+
+    with psycopg2.connect(**DB_CONFIG) as conn:
+        with conn.cursor() as cur:
+            supp_id = None
+            if supplier_name:
+                cur.execute("SELECT supp_id FROM suppliers WHERE supp_name=%s", (supplier_name,))
+                row = cur.fetchone()
+                supp_id = row[0] if row else None
+
+            categ_id = None
+            if category_name:
+                cur.execute("SELECT categ_id FROM categories WHERE categ_name=%s", (category_name,))
+                row = cur.fetchone()
+                categ_id = row[0] if row else None
+
             cur.execute(
-                """INSERT INTO products (product_art, product_name, product_unit, product_price,
-                   supp_id, product_manufac, categ_id, product_discount,
-                   product_stock, product_desc, product_photo)
-                   VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+                """INSERT INTO products (
+                       product_art, product_name, product_unit, product_price,
+                       supp_id, product_manufac, categ_id, product_discount,
+                       product_stock, product_desc, product_photo
+                   ) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
                    RETURNING product_id""",
-                vals,
+                (
+                    art,
+                    name,
+                    unit,
+                    price,
+                    supp_id,
+                    manufacturer,
+                    categ_id,
+                    discount,
+                    stock_quantity,
+                    description,
+                    photo,
+                ),
             )
             return cur.fetchone()[0]
 
 
-insert_product = lambda d: save_product(d)
-update_product = lambda i, d: save_product(d, i)
+def update_product(product_id, data):
+    art = (data.get("article") or "").strip()
+    name = data.get("product_name")
+    unit = (data.get("unit") or "").strip() or None
+    price = data.get("price")
+    supplier_name = (data.get("supplier") or "").strip()
+    manufacturer = (data.get("manufacturer") or "").strip() or None
+    category_name = (data.get("category") or "").strip()
+    discount = int(float(data.get("discount") or 0))
+    stock_quantity = int(float(data.get("stock_quantity") or 0))
+    description = data.get("description")
+    photo = (data.get("photo") or "").strip() or None
+
+    with psycopg2.connect(**DB_CONFIG) as conn:
+        with conn.cursor() as cur:
+            supp_id = None
+            if supplier_name:
+                cur.execute("SELECT supp_id FROM suppliers WHERE supp_name=%s", (supplier_name,))
+                row = cur.fetchone()
+                supp_id = row[0] if row else None
+
+            categ_id = None
+            if category_name:
+                cur.execute("SELECT categ_id FROM categories WHERE categ_name=%s", (category_name,))
+                row = cur.fetchone()
+                categ_id = row[0] if row else None
+
+            cur.execute(
+                """UPDATE products SET
+                       product_art=%s,
+                       product_name=%s,
+                       product_unit=%s,
+                       product_price=%s,
+                       supp_id=%s,
+                       product_manufac=%s,
+                       categ_id=%s,
+                       product_discount=%s,
+                       product_stock=%s,
+                       product_desc=%s,
+                       product_photo=%s
+                   WHERE product_id=%s""",
+                (
+                    art,
+                    name,
+                    unit,
+                    price,
+                    supp_id,
+                    manufacturer,
+                    categ_id,
+                    discount,
+                    stock_quantity,
+                    description,
+                    photo,
+                    product_id,
+                ),
+            )
+            return product_id
 
 
 def delete_product(product_id):
-    q("DELETE FROM products WHERE product_id=%s", (product_id,))
+    with psycopg2.connect(**DB_CONFIG) as conn:
+        with conn.cursor() as cur:
+            cur.execute("DELETE FROM products WHERE product_id=%s", (product_id,))
 
 
 def parse_order_line_items(text):
@@ -178,19 +238,19 @@ def parse_order_line_items(text):
     return res
 
 
-def _order_items_for_save(product_article_text):
+def get_order_items_from_text(product_article_text):
     lines = parse_order_line_items(product_article_text)
     if not lines:
         raise ValueError("Укажите хотя бы одну позицию: артикул или «артикул, количество» через запятую.")
     rows = []
-    for art, qty in lines:
-        r = q_one(
-            "SELECT product_id FROM products WHERE TRIM(product_art)=%s",
-            (art.strip(),),
-        )
-        if not r:
-            raise ValueError(f"Товар с артикулом «{art}» не найден.")
-        rows.append((r[0], qty))
+    with psycopg2.connect(**DB_CONFIG) as conn:
+        with conn.cursor() as cur:
+            for art, qty in lines:
+                cur.execute("SELECT product_id FROM products WHERE TRIM(product_art)=%s", (art.strip(),))
+                r = cur.fetchone()
+                if not r:
+                    raise ValueError(f"Товар с артикулом «{art}» не найден.")
+                rows.append((r[0], qty))
     return rows
 
 
@@ -209,63 +269,72 @@ def format_order_items_line(items):
 
 
 def get_orders_all():
-    return q_all(
-        "SELECT o.order_id AS id, o.order_date, o.order_pup_date AS delivery_date, "
-        "pp.pp_name AS pickup_point_address, "
-        "COALESCE("
-        "(SELECT STRING_AGG("
-        "p.product_art || CASE WHEN oi.product_quantity > 1 THEN ' ×' || oi.product_quantity::text ELSE '' END, "
-        "', ' ORDER BY oi.order_item_id) "
-        "FROM order_items oi JOIN products p ON p.product_id = oi.product_id "
-        "WHERE oi.order_id = o.order_id), '') AS article, st.status_name "
-        "FROM orders o "
-        "LEFT JOIN statuses st ON o.status_id = st.status_id "
-        "LEFT JOIN pickup_points pp ON o.pp_id = pp.pp_id "
-        "ORDER BY o.order_date DESC, o.order_id DESC",
-        as_dict=True,
-    )
+    with psycopg2.connect(**DB_CONFIG) as conn:
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            cur.execute(
+                "SELECT o.order_id AS id, o.order_date, o.order_pup_date AS delivery_date, "
+                "pp.pp_name AS pickup_point_address, "
+                "COALESCE("
+                "(SELECT STRING_AGG("
+                "p.product_art || CASE WHEN oi.product_quantity > 1 THEN ' ×' || oi.product_quantity::text ELSE '' END, "
+                "', ' ORDER BY oi.order_item_id) "
+                "FROM order_items oi JOIN products p ON p.product_id = oi.product_id "
+                "WHERE oi.order_id = o.order_id), '') AS article, st.status_name "
+                "FROM orders o "
+                "LEFT JOIN statuses st ON o.status_id = st.status_id "
+                "LEFT JOIN pickup_points pp ON o.pp_id = pp.pp_id "
+                "ORDER BY o.order_date DESC, o.order_id DESC"
+            )
+            return cur.fetchall()
 
 
 def get_order_by_id(order_id):
-    row = q_one(
-        "SELECT o.order_id AS id, o.order_date, o.order_pup_date AS delivery_date, "
-        "pp.pp_name AS pickup_point_address, "
-        "o.order_pp_code AS receiver_code, o.user_name AS client_name, "
-        "st.status_name, o.pp_id AS pickup_point_id "
-        "FROM orders o "
-        "LEFT JOIN statuses st ON o.status_id = st.status_id "
-        "LEFT JOIN pickup_points pp ON o.pp_id = pp.pp_id "
-        "WHERE o.order_id=%s",
-        (order_id,),
-        as_dict=True,
-    )
-    if not row:
-        return None
-    row["items"] = q_all(
-        "SELECT oi.product_id, p.product_art AS article, oi.product_quantity AS quantity FROM order_items oi "
-        "JOIN products p ON p.product_id = oi.product_id WHERE oi.order_id=%s "
-        "ORDER BY oi.order_item_id",
-        (order_id,),
-        as_dict=True,
-    )
-    return row
+    with psycopg2.connect(**DB_CONFIG) as conn:
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            cur.execute(
+                "SELECT o.order_id AS id, o.order_date, o.order_pup_date AS delivery_date, "
+                "pp.pp_name AS pickup_point_address, "
+                "o.order_pp_code AS receiver_code, o.user_name AS client_name, "
+                "st.status_name, o.pp_id AS pickup_point_id "
+                "FROM orders o "
+                "LEFT JOIN statuses st ON o.status_id = st.status_id "
+                "LEFT JOIN pickup_points pp ON o.pp_id = pp.pp_id "
+                "WHERE o.order_id=%s",
+                (order_id,),
+            )
+            row = cur.fetchone()
+            if not row:
+                return None
+            cur.execute(
+                "SELECT oi.product_id, p.product_art AS article, oi.product_quantity AS quantity FROM order_items oi "
+                "JOIN products p ON p.product_id = oi.product_id WHERE oi.order_id=%s "
+                "ORDER BY oi.order_item_id",
+                (order_id,),
+            )
+            row["items"] = cur.fetchall()
+            return row
 
 
 def get_order_statuses():
-    return _names("SELECT status_name FROM statuses ORDER BY status_name")
+    with psycopg2.connect(**DB_CONFIG) as conn:
+        with conn.cursor() as cur:
+            cur.execute("SELECT status_name FROM statuses ORDER BY status_name")
+            return [r[0] for r in cur.fetchall()]
 
 
 def get_pickup_points():
-    return q_all(
-        "SELECT pp_id AS pickup_point_id, pp_name AS pickup_address FROM pickup_points ORDER BY pp_id",
-        as_dict=True,
-    )
+    with psycopg2.connect(**DB_CONFIG) as conn:
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            cur.execute(
+                "SELECT pp_id AS pickup_point_id, pp_name AS pickup_address FROM pickup_points ORDER BY pp_id"
+            )
+            return cur.fetchall()
 
 
-def save_order(order_id, data):
+def insert_order(data):
     t = (data.get("product_article") or "").strip()
-    item_rows = _order_items_for_save(t)
-    status_id = _fk("statuses", "status_id", "status_name", data["status_name"])
+    item_rows = get_order_items_from_text(t)
+    status_name = (data.get("status_name") or "").strip()
     ppid = data.get("pickup_point_id")
     rc = data.get("receiver_code")
     rc = None if rc is None else str(rc).strip() or None
@@ -274,31 +343,28 @@ def save_order(order_id, data):
     except ValueError:
         rc_num = None
     client_name = (data.get("user_name") or "").strip() or None
-    head = (
-        data["order_date"],
-        data["delivery_date"],
-        ppid,
-        client_name,
-        status_id,
-        rc_num,
-    )
     with psycopg2.connect(**DB_CONFIG) as conn:
         with conn.cursor() as cur:
-            if order_id is None:
-                cur.execute(
-                    "INSERT INTO orders (order_date, order_pup_date, pp_id, user_name, "
-                    "status_id, order_pp_code) VALUES (%s,%s,%s,%s,%s,%s) RETURNING order_id",
-                    head,
-                )
-                oid = cur.fetchone()[0]
-            else:
-                cur.execute(
-                    "UPDATE orders SET order_date=%s, order_pup_date=%s, pp_id=%s, user_name=%s, "
-                    "status_id=%s, order_pp_code=%s WHERE order_id=%s",
-                    head + (order_id,),
-                )
-                oid = order_id
-                cur.execute("DELETE FROM order_items WHERE order_id=%s", (oid,))
+            status_id = None
+            if status_name:
+                cur.execute("SELECT status_id FROM statuses WHERE status_name=%s", (status_name,))
+                row = cur.fetchone()
+                status_id = row[0] if row else None
+
+            cur.execute(
+                "INSERT INTO orders (order_date, order_pup_date, pp_id, user_name, status_id, order_pp_code) "
+                "VALUES (%s,%s,%s,%s,%s,%s) RETURNING order_id",
+                (
+                    data["order_date"],
+                    data["delivery_date"],
+                    ppid,
+                    client_name,
+                    status_id,
+                    rc_num,
+                ),
+            )
+            oid = cur.fetchone()[0]
+
             for product_id, qty in item_rows:
                 cur.execute(
                     "INSERT INTO order_items (order_id, product_id, product_quantity) VALUES (%s,%s,%s)",
@@ -307,5 +373,50 @@ def save_order(order_id, data):
             return oid
 
 
+def update_order(order_id, data):
+    t = (data.get("product_article") or "").strip()
+    item_rows = get_order_items_from_text(t)
+    status_name = (data.get("status_name") or "").strip()
+    ppid = data.get("pickup_point_id")
+    rc = data.get("receiver_code")
+    rc = None if rc is None else str(rc).strip() or None
+    try:
+        rc_num = int(rc) if rc is not None and rc != "" else None
+    except ValueError:
+        rc_num = None
+    client_name = (data.get("user_name") or "").strip() or None
+
+    with psycopg2.connect(**DB_CONFIG) as conn:
+        with conn.cursor() as cur:
+            status_id = None
+            if status_name:
+                cur.execute("SELECT status_id FROM statuses WHERE status_name=%s", (status_name,))
+                row = cur.fetchone()
+                status_id = row[0] if row else None
+
+            cur.execute(
+                "UPDATE orders SET order_date=%s, order_pup_date=%s, pp_id=%s, user_name=%s, "
+                "status_id=%s, order_pp_code=%s WHERE order_id=%s",
+                (
+                    data["order_date"],
+                    data["delivery_date"],
+                    ppid,
+                    client_name,
+                    status_id,
+                    rc_num,
+                    order_id,
+                ),
+            )
+            cur.execute("DELETE FROM order_items WHERE order_id=%s", (order_id,))
+            for product_id, qty in item_rows:
+                cur.execute(
+                    "INSERT INTO order_items (order_id, product_id, product_quantity) VALUES (%s,%s,%s)",
+                    (order_id, product_id, qty),
+                )
+            return order_id
+
+
 def delete_order(order_id):
-    q("DELETE FROM orders WHERE order_id=%s", (order_id,))
+    with psycopg2.connect(**DB_CONFIG) as conn:
+        with conn.cursor() as cur:
+            cur.execute("DELETE FROM orders WHERE order_id=%s", (order_id,))

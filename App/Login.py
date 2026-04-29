@@ -7,8 +7,6 @@ from App.db import auth_user
 
 Ui_Login, BaseLogin = loadUiType(ui_path("login"))
 
-GUEST = {"full_name": "Гость", "role_name": "guest", "user_role": "guest", "user_id": None}
-
 
 class Login(BaseLogin, Ui_Login):
     def __init__(self, parent=None):
@@ -16,18 +14,17 @@ class Login(BaseLogin, Ui_Login):
         self.setupUi(self)
         self.user = None
         self.setWindowTitle("Вход")
-        self.btn_login.clicked.connect(self._login)
-        self.btn_guest.clicked.connect(self._guest)
+        self.btn_login.clicked.connect(self.login_clicked)
+        self.btn_guest.clicked.connect(self.guest_clicked)
         self.lbl_logo.setPixmap(QPixmap("resources/icon.png"))
 
-    def _login(self):
-        u = auth_user(self.login_edit.text(), self.password_edit.text())
-        if u:
-            self.user = u
+    def login_clicked(self):
+        self.user = auth_user(self.login_edit.text(), self.password_edit.text())
+        if self.user:
             self.accept()
 
-    def _guest(self):
-        self.user = GUEST
+    def guest_clicked(self):
+        self.user = {"full_name": "Гость", "role_name": "guest", "user_role": "guest", "user_id": None}
         self.accept()
 
     def get_user(self):

@@ -13,7 +13,8 @@ FONT_SIZE = 16
 BTN_H = 42
 
 
-def app_style(app):
+def main():
+    app = QApplication(sys.argv)
     app.setApplicationName("Система учёта товаров")
     app.setWindowIcon(QIcon(APP_ICON))
     app.setFont(QFont("Times New Roman", FONT_SIZE))
@@ -33,11 +34,6 @@ def app_style(app):
         f"QPushButton{{color:{c};min-height:{BTN_H}px;min-width:100px;}}"
         f"QDialogButtonBox{{color:{c};}}"
     )
-
-
-def main():
-    app = QApplication(sys.argv)
-    app_style(app)
 
     while True:
         login_dialog = Login()

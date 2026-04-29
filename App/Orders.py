@@ -3,7 +3,7 @@ from PySide6.QtWidgets import QSizePolicy
 from PySide6.QtCore import Qt
 from PySide6.QtUiTools import loadUiType
 
-from App.config import is_admin_role, role_title_ru, ui_path
+from App.config import role_title_ru, ui_path
 from App.db import delete_order, get_orders_all
 from App.OrderCard import OrderCard
 
@@ -20,7 +20,7 @@ class Orders(BaseOrders, Ui_Orders):
 
         self.lbl_user.setText((user.get("full_name") or user.get("user_name") or "").strip() or "—")
         self.lbl_role.setText(role_title_ru(self.role))
-        adm = is_admin_role(self.role)
+        adm = self.role in ("administrator", "admin")
         self.btn_add.setVisible(adm)
         self.btn_del.setVisible(adm)
         self.orders_scroll.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
@@ -43,7 +43,7 @@ class Orders(BaseOrders, Ui_Orders):
         for o in get_orders_all():
             c = OrderCard(o, parent=self.orders_scroll_contents)
             c.selected.connect(self._on_sel)
-            if is_admin_role(self.role):
+            if self.role in ("administrator", "admin"):
                 c.open_requested.connect(self._open)
             lay.addWidget(c)
         lay.addStretch()
